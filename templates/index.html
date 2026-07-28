@@ -87,12 +87,11 @@
         .playlist li.active .song-artist {
             color: #ddd;
         }
-        .no-results {
+        .status-msg {
             padding: 15px;
             text-align: center;
             color: #888;
             font-style: italic;
-            display: none;
         }
         .controls {
             display: flex;
@@ -132,13 +131,7 @@
     <input type="text" id="searchInput" class="search-box" placeholder="🔍 Cerca brano o artista...">
 
     <ul class="playlist" id="playlist">
-        {% for song in songs|reverse %}
-        <li data-src="{{ song.url }}" data-title="{{ song.title }}" data-artist="{{ song.artist }}">
-            <span class="song-title">{{ song.title }}</span>
-            <span class="song-artist">{{ song.artist }}</span>
-        </li>
-        {% endfor %}
-        <div id="noResults" class="no-results">Nessun brano trovato</div>
+        <div id="statusMsg" class="status-msg">Caricamento brani da Telegram...</div>
     </ul>
 
     <div class="controls">
@@ -153,17 +146,60 @@
 
 <script>
     const player = document.getElementById('audioPlayer');
-    const items = Array.from(document.querySelectorAll('#playlist li'));
+    const playlistUl = document.getElementById('playlist');
     const searchInput = document.getElementById('searchInput');
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
     const shuffleBtn = document.getElementById('shuffleBtn');
     const repeatBtn = document.getElementById('repeatBtn');
-    const noResults = document.getElementById('noResults');
+    const statusMsg = document.getElementById('statusMsg');
 
+    let songsData = [];
+    let items = [];
     let currentIndex = 0;
     let isShuffle = false;
     let isRepeat = false;
+
+    async function loadSongs() {
+        try {
+            const response = await fetch('/api/playlist');
+            songsData = await response.json();
+
+            if (!songsData || songsData.length === 0) {
+                statusMsg.textContent = 'Nessun brano trovato nel canale.';
+                return;
+            }
+
+            // Invertiamo per avere gli ultimi aggiunti in alto
+            songsData.reverse();
+
+            playlistUl.innerHTML = '';
+            
+            songsData.forEach((song, index) => {
+                const li = document.createElement('li');
+                li.setAttribute('data-src', song.url);
+                li.setAttribute('data-title', song.title);
+                li.setAttribute('data-artist', song.artist);
+
+                li.innerHTML = `
+                    <span class="song-title">${song.title}</span>
+                    <span class="song-artist">${song.artist}</span>
+                `;
+
+                li.addEventListener('click', () => playSong(index));
+                playlistUl.appendChild(li);
+            });
+
+            items = Array.from(playlistUl.querySelectorAll('li'));
+
+            if (items.length > 0) {
+                playSong(0, false); // Prepara il primo brano senza avviarlo automaticamente
+            }
+        } catch (error) {
+            console.error(error);
+            statusMsg.textContent = 'Errore durante il caricamento dei brani.';
+        }
+    }
 
     function getVisibleItems() {
         return items.filter(item => item.style.display !== 'none');
@@ -184,7 +220,7 @@
         }
     }
 
-    function playSong(index) {
+    function playSong(index, autoPlay = true) {
         if (index < 0 || index >= items.length) return;
 
         items.forEach(li => li.classList.remove('active'));
@@ -198,7 +234,10 @@
 
         player.src = selected.getAttribute('data-src');
         currentIndex = index;
-        player.play().catch(() => {});
+
+        if (autoPlay) {
+            player.play().catch(() => {});
+        }
 
         updateMediaSession(title, artist);
     }
@@ -234,12 +273,6 @@
         playSong(items.indexOf(visible[prevVisibleIndex]));
     }
 
-    items.forEach((item, index) => {
-        item.addEventListener('click', () => {
-            playSong(index);
-        });
-    });
-
     nextBtn.addEventListener('click', playNext);
     prevBtn.addEventListener('click', playPrev);
 
@@ -270,19 +303,10 @@
                 item.style.display = 'none';
             }
         });
-
-        if (visibleCount === 0 && query !== '') {
-            noResults.style.display = 'block';
-        } else {
-            noResults.style.display = 'none';
-        }
     });
 
-    if (items.length > 0) {
-        items[0].classList.add('active');
-        player.src = items[0].getAttribute('data-src');
-        updateMediaSession(items[0].getAttribute('data-title'), items[0].getAttribute('data-artist'));
-    }
+    // Carica le canzoni via API appena la pagina è pronta
+    loadSongs();
 </script>
 
 </body>
