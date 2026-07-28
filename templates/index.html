@@ -3,287 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SboGiA Player</title>
+    <title>EsteticaNon WebApp</title>
     <style>
         * {
             box-sizing: border-box;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
             margin: 0;
-            padding: 15px;
-        }
-        .player-container {
-            background-color: #1e1e1e;
-            padding: 20px;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 500px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            border: 1px solid #2a2a2a;
-        }
-        h1 {
-            text-align: center;
-            color: #2e8b57;
-            font-size: 24px;
-            margin-top: 0;
-            margin-bottom: 15px;
-        }
-        .search-box {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border-radius: 6px;
-            border: 1px solid #333;
-            background-color: #2a2a2a;
-            color: #fff;
-            font-size: 14px;
-            outline: none;
-        }
-        .search-box:focus {
-            border-color: #004225;
-        }
-        .playlist {
-            list-style: none;
             padding: 0;
-            margin: 0 0 15px 0;
-            height: 220px;
-            max-height: 220px;
-            overflow-y: auto;
-            border: 1px solid #2a2a2a;
-            border-radius: 6px;
-            background-color: #181818;
+            font-family: system-ui, -apple-system, sans-serif;
         }
-        .playlist li {
-            padding: 10px;
-            border-bottom: 1px solid #2a2a2a;
-            cursor: pointer;
-            transition: background 0.2s;
+
+        body {
+            background-color: #f4f6f8;
+            color: #333;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
         }
-        .playlist li:last-child {
-            border-bottom: none;
-        }
-        .playlist li:hover {
-            background-color: #2a2a2a;
-        }
-        .playlist li.active {
-            background-color: #004225;
-            color: #fff;
-        }
-        .song-title {
-            font-weight: bold;
-            display: block;
-        }
-        .song-artist {
-            font-size: 0.85em;
-            color: #aaa;
-        }
-        .playlist li.active .song-artist {
-            color: #ddd;
-        }
-        .no-results {
-            padding: 15px;
+
+        header {
             text-align: center;
-            color: #888;
-            font-style: italic;
-            display: none;
+            margin-bottom: 25px;
         }
-        .controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
+
+        h1 {
+            color: #2c3e50;
             margin-bottom: 15px;
         }
-        .btn-control {
-            background-color: #004225;
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 12px 20px;
+            background-color: #007bff;
             color: white;
             border: none;
-            padding: 8px 14px;
-            border-radius: 20px;
+            border-radius: 8px;
+            font-size: 16px;
             cursor: pointer;
-            font-size: 14px;
-            transition: background 0.2s;
+            transition: background-color 0.2s;
         }
-        .btn-control:hover {
-            background-color: #002b18;
+
+        button:hover {
+            background-color: #0056b3;
         }
-        .btn-control.active-mode {
-            background-color: #2e8b57;
-            box-shadow: 0 0 8px rgba(46, 139, 87, 0.6);
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
         }
-        audio {
-            width: 100%;
-            border-radius: 30px;
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid #eee;
+        }
+
+        .card:hover {
+            border-color: #007bff;
+        }
+
+        #risultati {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 100px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .item-risultato {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .item-risultato:last-child {
+            border-bottom: none;
         }
     </style>
 </head>
 <body>
 
-<div class="player-container">
-    <h1>SboGiA Player</h1>
+    <header>
+        <h1>EsteticaNon WebApp</h1>
+    </header>
 
-    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Cerca brano o artista...">
-
-    <ul class="playlist" id="playlist">
-        {% for song in songs|reverse %}
-        <li data-src="{{ song.url }}" data-title="{{ song.title }}" data-artist="{{ song.artist }}">
-            <span class="song-title">{{ song.title }}</span>
-            <span class="song-artist">{{ song.artist }}</span>
-        </li>
-        {% endfor %}
-        <div id="noResults" class="no-results">Nessun brano trovato</div>
-    </ul>
-
-    <div class="controls">
-        <button class="btn-control" id="shuffleBtn">🔀 Casuale</button>
-        <button class="btn-control" id="prevBtn">⏮️ Indietro</button>
-        <button class="btn-control" id="nextBtn">Avanti ⏭️</button>
-        <button class="btn-control" id="repeatBtn">🔁 Ripeti</button>
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Cerca un servizio o un elemento...">
+        <button id="btnCerca">Cerca</button>
+        <button id="btnCasuale" style="background-color: #28a745;">Casuale</button>
     </div>
 
-    <audio id="audioPlayer" controls></audio>
-</div>
+    <div class="grid">
+        <div class="card" onclick="selezionaCategoria('Trattamenti Viso')">Trattamenti Viso</div>
+        <div class="card" onclick="selezionaCategoria('Massaggi')">Massaggi</div>
+        <div class="card" onclick="selezionaCategoria('Epilazione')">Epilazione</div>
+        <div class="card" onclick="selezionaCategoria('Manicure & Pedicure')">Manicure</div>
+    </div>
 
-<script>
-    const player = document.getElementById('audioPlayer');
-    const items = Array.from(document.querySelectorAll('#playlist li'));
-    const searchInput = document.getElementById('searchInput');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const shuffleBtn = document.getElementById('shuffleBtn');
-    const repeatBtn = document.getElementById('repeatBtn');
-    const noResults = document.getElementById('noResults');
+    <div id="risultati">
+        <p style="color: #777;">I risultati della ricerca o del click appariranno qui sotto...</p>
+    </div>
 
-    let currentIndex = 0;
-    let isShuffle = false;
-    let isRepeat = false;
+    <script>
+        // Dati di prova integrati direttamente nel file
+        const database = [
+            { id: 1, nome: "Pulizia del Viso Profonda", categoria: "Trattamenti Viso" },
+            { id: 2, nome: "Trattamento Anti-Age", categoria: "Trattamenti Viso" },
+            { id: 3, nome: "Massaggio Rilassante 50min", categoria: "Massaggi" },
+            { id: 4, nome: "Massaggio Decontratturante", categoria: "Massaggi" },
+            { id: 5, nome: "Epilazione Laser Gambe", categoria: "Epilazione" },
+            { id: 6, nome: "Epilazione Cera Completa", categoria: "Epilazione" },
+            { id: 7, nome: "Manicure Semipermanente", categoria: "Manicure & Pedicure" },
+            { id: 8, nome: "Pedicure Curativo", categoria: "Manicure & Pedicure" }
+        ];
 
-    function getVisibleItems() {
-        return items.filter(item => item.style.display !== 'none');
-    }
+        const input = document.getElementById('searchInput');
+        const btnCerca = document.getElementById('btnCerca');
+        const btnCasuale = document.getElementById('btnCasuale');
+        const contenitoreRisultati = document.getElementById('risultati');
 
-    function updateMediaSession(title, artist) {
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.metadata = new MediaMetadata({
-                title: title || 'Brano Sconosciuto',
-                artist: artist || 'Artista Sconosciuto',
-                album: 'SboGiA Player'
+        function mostraRisultati(lista) {
+            if (lista.length === 0) {
+                contenitoreRisultati.innerHTML = '<p style="color: red;">Nessun risultato trovato.</p>';
+                return;
+            }
+            let html = '';
+            lista.forEach(item => {
+                html += `<div class="item-risultato">
+                    <strong>${item.nome}</strong> - <small>${item.categoria}</small>
+                </div>`;
             });
-
-            navigator.mediaSession.setActionHandler('play', () => player.play());
-            navigator.mediaSession.setActionHandler('pause', () => player.pause());
-            navigator.mediaSession.setActionHandler('previoustrack', playPrev);
-            navigator.mediaSession.setActionHandler('nexttrack', playNext);
-        }
-    }
-
-    function playSong(index) {
-        if (index < 0 || index >= items.length) return;
-
-        items.forEach(li => li.classList.remove('active'));
-
-        const selected = items[index];
-        selected.classList.add('active');
-        selected.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-        const title = selected.getAttribute('data-title');
-        const artist = selected.getAttribute('data-artist');
-
-        player.src = selected.getAttribute('data-src');
-        currentIndex = index;
-        player.play().catch(() => {});
-
-        updateMediaSession(title, artist);
-    }
-
-    function playNext() {
-        if (isRepeat) {
-            playSong(currentIndex);
-            return;
+            contenitoreRisultati.innerHTML = html;
         }
 
-        const visible = getVisibleItems();
-        if (visible.length === 0) return;
-
-        if (isShuffle) {
-            const randomIndex = Math.floor(Math.random() * visible.length);
-            const targetItem = visible[randomIndex];
-            playSong(items.indexOf(targetItem));
-        } else {
-            const currentVisibleIndex = visible.indexOf(items[currentIndex]);
-            let nextVisibleIndex = currentVisibleIndex + 1;
-            if (nextVisibleIndex >= visible.length) nextVisibleIndex = 0;
-            playSong(items.indexOf(visible[nextVisibleIndex]));
+        function eseguiRicerca() {
+            const testo = input.value.toLowerCase().trim();
+            if (testo === '') {
+                mostraRisultati(database);
+                return;
+            }
+            const filtrati = database.filter(item => 
+                item.nome.toLowerCase().includes(testo) || 
+                item.categoria.toLowerCase().includes(testo)
+            );
+            mostraRisultati(filtrati);
         }
-    }
 
-    function playPrev() {
-        const visible = getVisibleItems();
-        if (visible.length === 0) return;
+        function selezionaCategoria(cat) {
+            const filtrati = database.filter(item => item.categoria === cat);
+            mostraRisultati(filtrati);
+        }
 
-        const currentVisibleIndex = visible.indexOf(items[currentIndex]);
-        let prevVisibleIndex = currentVisibleIndex - 1;
-        if (prevVisibleIndex < 0) prevVisibleIndex = visible.length - 1;
-        playSong(items.indexOf(visible[prevVisibleIndex]));
-    }
+        btnCerca.addEventListener('click', eseguiRicerca);
 
-    items.forEach((item, index) => {
-        item.addEventListener('click', () => {
-            playSong(index);
-        });
-    });
-
-    nextBtn.addEventListener('click', playNext);
-    prevBtn.addEventListener('click', playPrev);
-
-    shuffleBtn.addEventListener('click', () => {
-        isShuffle = !isShuffle;
-        shuffleBtn.classList.toggle('active-mode', isShuffle);
-    });
-
-    repeatBtn.addEventListener('click', () => {
-        isRepeat = !isRepeat;
-        repeatBtn.classList.toggle('active-mode', isRepeat);
-    });
-
-    player.addEventListener('ended', playNext);
-
-    searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.trim().toLowerCase();
-        let visibleCount = 0;
-
-        items.forEach(item => {
-            const title = (item.getAttribute('data-title') || '').toLowerCase();
-            const artist = (item.getAttribute('data-artist') || '').toLowerCase();
-
-            if (title.includes(query) || artist.includes(query)) {
-                item.style.display = '';
-                visibleCount++;
-            } else {
-                item.style.display = 'none';
+        input.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                eseguiRicerca();
             }
         });
 
-        if (visibleCount === 0 && query !== '') {
-            noResults.style.display = 'block';
-        } else {
-            noResults.style.display = 'none';
-        }
-    });
-
-    if (items.length > 0) {
-        items[0].classList.add('active');
-        player.src = items[0].getAttribute('data-src');
-        updateMediaSession(items[0].getAttribute('data-title'), items[0].getAttribute('data-artist'));
-    }
-</script>
+        btnCasuale.addEventListener('click', () => {
+            const elementoCasuale = database[Math.floor(Math.random() * database.length)];
+            mostraRisultati([elementoCasuale]);
+        });
+    </script>
 
 </body>
 </html>
