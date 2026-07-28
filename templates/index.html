@@ -90,7 +90,7 @@
         .status-msg {
             padding: 15px;
             text-align: center;
-            color: #888;
+            color: #ff6b6b;
             font-style: italic;
         }
         .controls {
@@ -131,7 +131,7 @@
     <input type="text" id="searchInput" class="search-box" placeholder="🔍 Cerca brano o artista...">
 
     <ul class="playlist" id="playlist">
-        <div id="statusMsg" class="status-msg">Caricamento brani dal satellite...</div>
+        <div id="statusMsg" class="status-msg">Caricamento brani da Telegram...</div>
     </ul>
 
     <div class="controls">
@@ -163,10 +163,15 @@
     async function loadSongs() {
         try {
             const response = await fetch('/api/playlist');
+            
+            if (!response.ok) {
+                throw new Error(`Errore HTTP ${response.status}`);
+            }
+
             songsData = await response.json();
 
             if (!songsData || songsData.length === 0) {
-                statusMsg.textContent = 'Nessun brano trovato nel canale.';
+                statusMsg.textContent = 'Nessun brano trovato o lista vuota.';
                 return;
             }
 
@@ -193,11 +198,11 @@
             items = Array.from(playlistUl.querySelectorAll('li'));
 
             if (items.length > 0) {
-                playSong(0, false); // Prepara il primo brano senza avviarlo automaticamente
+                playSong(0, false);
             }
         } catch (error) {
             console.error(error);
-            statusMsg.textContent = 'Errore durante il caricamento dei brani.';
+            statusMsg.textContent = `Errore di connessione: ${error.message}`;
         }
     }
 
@@ -290,7 +295,6 @@
 
     searchInput.addEventListener('input', (e) => {
         const query = e.target.value.trim().toLowerCase();
-        let visibleCount = 0;
 
         items.forEach(item => {
             const title = (item.getAttribute('data-title') || '').toLowerCase();
@@ -298,14 +302,12 @@
 
             if (title.includes(query) || artist.includes(query)) {
                 item.style.display = '';
-                visibleCount++;
             } else {
                 item.style.display = 'none';
             }
         });
     });
 
-    // Carica le canzoni via API appena la pagina è pronta
     loadSongs();
 </script>
 
