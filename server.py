@@ -19,18 +19,14 @@ def get_playlist():
         return jsonify([])
 
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/getUpdates"
-    params = {
-        "allowed_updates": ["channel_post"]
-    }
 
     try:
-        res = requests.get(url, params=params, timeout=10).json()
+        res = requests.get(url).json()
         tracks = []
-        seen_file_ids = set()
 
         if res.get("ok"):
             for update in res.get("result", []):
-                msg = update.get("channel_post") or {}
+                msg = update.get("channel_post") or update.get("message") or {}
                 chat_id = str(msg.get("chat", {}).get("id", ""))
 
                 if chat_id not in CHANNEL_IDS:
@@ -42,40 +38,32 @@ def get_playlist():
                 audio = msg["audio"]
                 file_id = audio.get("file_id")
 
-                if not file_id or file_id in seen_file_ids:
+                if not file_id:
                     continue
 
                 f_res = requests.get(
                     f"https://api.telegram.org/bot{BOT_TOKEN}/getFile",
-                    params={"file_id": file_id},
-                    timeout=10
+                    params={"file_id": file_id}
                 ).json()
 
                 if not f_res.get("ok"):
                     continue
 
-                file_path = f_res.get("result", {}).get("file_path")
-                if not file_path:
-                    continue
-
+                file_path = f_res["result"]["file_path"]
                 stream_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{file_path}"
 
                 tracks.append({
                     "title": audio.get("title") or audio.get("file_name") or "Brano sconosciuto",
                     "artist": audio.get("performer") or "Canale Telegram",
-                    "url": stream_url,
-                    "channel_id": chat_id
+                    "url": stream_url
                 })
-
-                seen_file_ids.add(file_id)
 
         return jsonify(tracks)
 
-    except requests.RequestException:
-        return jsonify([])
     except Exception:
         return jsonify([])
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+    
