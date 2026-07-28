@@ -4,7 +4,8 @@ from flask import Flask, jsonify, render_template
 
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 CHANNEL_IDS = {
-    x.strip() for x in os.environ.get("CHANNEL_IDS", "").split(",") if x.strip()
+    x.strip() for x in (os.environ.get("CHANNEL_IDS") or os.environ.get("CHANNEL_ID", "")).split(",")
+    if x.strip()
 }
 
 app = Flask(__name__)
@@ -66,4 +67,3 @@ def get_playlist():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-    
