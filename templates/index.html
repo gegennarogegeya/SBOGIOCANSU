@@ -3,65 +3,287 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ricerca Canale</title>
+    <title>SboGiA Player</title>
     <style>
-        body { font-family: sans-serif; background: #121212; color: #fff; padding: 20px; }
-        input, button { padding: 10px; font-size: 16px; margin: 5px 0; }
-        input[type="text"] { width: 70%; }
-        .result-item { margin: 10px 0; padding: 10px; background: #222; border-radius: 5px; }
-        a { color: #1db954; text-decoration: none; font-weight: bold; }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 15px;
+        }
+        .player-container {
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 1px solid #2a2a2a;
+        }
+        h1 {
+            text-align: center;
+            color: #2e8b57;
+            font-size: 24px;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background-color: #2a2a2a;
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+        }
+        .search-box:focus {
+            border-color: #004225;
+        }
+        .playlist {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 15px 0;
+            height: 250px;
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            background-color: #181818;
+        }
+        .playlist li {
+            padding: 10px;
+            border-bottom: 1px solid #2a2a2a;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .playlist li:last-child {
+            border-bottom: none;
+        }
+        .playlist li:hover {
+            background-color: #2a2a2a;
+        }
+        .playlist li.active {
+            background-color: #004225;
+            color: #fff;
+        }
+        .song-title {
+            font-weight: bold;
+            display: block;
+        }
+        .song-artist {
+            font-size: 0.85em;
+            color: #aaa;
+        }
+        .playlist li.active .song-artist {
+            color: #ddd;
+        }
+        .no-results {
+            padding: 15px;
+            text-align: center;
+            color: #888;
+            font-style: italic;
+            display: none;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .btn-control {
+            background-color: #004225;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        .btn-control:hover {
+            background-color: #002b18;
+        }
+        .btn-control.active-mode {
+            background-color: #2e8b57;
+            box-shadow: 0 0 8px rgba(46, 139, 87, 0.6);
+        }
+        audio {
+            width: 100%;
+            border-radius: 30px;
+        }
     </style>
 </head>
 <body>
 
-    <h2>Cerca nel Canale</h2>
-    <input type="text" id="searchInput" placeholder="Inserisci il titolo del brano...">
-    <button onclick="searchChannel()">Cerca</button>
+<div class="player-container">
+    <h1>SboGiA Player</h1>
 
-    <div id="results"></div>
+    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Cerca brano o artista...">
 
-    <script>
-        const API_KEY = 'LA_TUA_API_KEY';
-        const CHANNEL_ID = 'IL_TUO_CHANNEL_ID'; // oppure usa playlistId se preferisci una playlist specifica
+    <ul class="playlist" id="playlist">
+        {% for song in songs|reverse %}
+        <li data-src="{{ song.url }}" data-title="{{ song.title }}" data-artist="{{ song.artist }}">
+            <span class="song-title">{{ song.title }}</span>
+            <span class="song-artist">{{ song.artist }}</span>
+        </li>
+        {% endfor %}
+        <div id="noResults" class="no-results">Nessun brano trovato</div>
+    </ul>
 
-        async function searchChannel() {
-            const query = document.getElementById('searchInput').value.trim();
-            const resultsDiv = document.getElementById('results');
-            resultsDiv.innerHTML = 'Ricerca in corso...';
+    <div class="controls">
+        <button class="btn-control" id="shuffleBtn">🔀 Casuale</button>
+        <button class="btn-control" id="prevBtn">⏮️ Indietro</button>
+        <button class="btn-control" id="nextBtn">Avanti ⏭️</button>
+        <button class="btn-control" id="repeatBtn">🔁 Ripeti</button>
+    </div>
 
-            if (!query) {
-                resultsDiv.innerHTML = 'Inserisci un termine di ricerca.';
-                return;
-            }
+    <audio id="audioPlayer" controls></audio>
+</div>
 
-            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&q=${encodeURIComponent(query)}&type=video&maxResults=20&key=${API_KEY}`;
+<script>
+    const player = document.getElementById('audioPlayer');
+    const items = Array.from(document.querySelectorAll('#playlist li'));
+    const searchInput = document.getElementById('searchInput');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const repeatBtn = document.getElementById('repeatBtn');
+    const noResults = document.getElementById('noResults');
 
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
+    let currentIndex = 0;
+    let isShuffle = false;
+    let isRepeat = false;
 
-                resultsDiv.innerHTML = '';
+    function getVisibleItems() {
+        return items.filter(item => item.style.display !== 'none');
+    }
 
-                if (!data.items || data.items.length === 0) {
-                    resultsDiv.innerHTML = 'Nessun brano trovato nel canale.';
-                    return;
-                }
+    function updateMediaSession(title, artist) {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: title || 'Brano Sconosciuto',
+                artist: artist || 'Artista Sconosciuto',
+                album: 'SboGiA Player'
+            });
 
-                data.items.forEach(item => {
-                    const videoId = item.id.videoId;
-                    const title = item.snippet.title;
-                    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-
-                    const div = document.createElement('div');
-                    div.className = 'result-item';
-                    div.innerHTML = `<a href="${videoUrl}" target="_blank">${title}</a>`;
-                    resultsDiv.appendChild(div);
-                });
-            } catch (error) {
-                console.error(error);
-                resultsDiv.innerHTML = 'Errore durante il recupero dei dati dal canale.';
-            }
+            navigator.mediaSession.setActionHandler('play', () => player.play());
+            navigator.mediaSession.setActionHandler('pause', () => player.pause());
+            navigator.mediaSession.setActionHandler('previoustrack', playPrev);
+            navigator.mediaSession.setActionHandler('nexttrack', playNext);
         }
-    </script>
+    }
+
+    function playSong(index) {
+        if (index < 0 || index >= items.length) return;
+
+        items.forEach(li => li.classList.remove('active'));
+
+        const selected = items[index];
+        selected.classList.add('active');
+        selected.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+        const title = selected.getAttribute('data-title');
+        const artist = selected.getAttribute('data-artist');
+
+        player.src = selected.getAttribute('data-src');
+        currentIndex = index;
+        player.play().catch(() => {});
+
+        updateMediaSession(title, artist);
+    }
+
+    function playNext() {
+        if (isRepeat) {
+            playSong(currentIndex);
+            return;
+        }
+
+        const visible = getVisibleItems();
+        if (visible.length === 0) return;
+
+        if (isShuffle) {
+            const randomIndex = Math.floor(Math.random() * visible.length);
+            const targetItem = visible[randomIndex];
+            playSong(items.indexOf(targetItem));
+        } else {
+            const currentVisibleIndex = visible.indexOf(items[currentIndex]);
+            let nextVisibleIndex = currentVisibleIndex + 1;
+            if (nextVisibleIndex >= visible.length) nextVisibleIndex = 0;
+            playSong(items.indexOf(visible[nextVisibleIndex]));
+        }
+    }
+
+    function playPrev() {
+        const visible = getVisibleItems();
+        if (visible.length === 0) return;
+
+        const currentVisibleIndex = visible.indexOf(items[currentIndex]);
+        let prevVisibleIndex = currentVisibleIndex - 1;
+        if (prevVisibleIndex < 0) prevVisibleIndex = visible.length - 1;
+        playSong(items.indexOf(visible[prevVisibleIndex]));
+    }
+
+    items.forEach((item, index) => {
+        item.addEventListener('click', () => {
+            playSong(index);
+        });
+    });
+
+    nextBtn.addEventListener('click', playNext);
+    prevBtn.addEventListener('click', playPrev);
+
+    shuffleBtn.addEventListener('click', () => {
+        isShuffle = !isShuffle;
+        shuffleBtn.classList.toggle('active-mode', isShuffle);
+    });
+
+    repeatBtn.addEventListener('click', () => {
+        isRepeat = !isRepeat;
+        repeatBtn.classList.toggle('active-mode', isRepeat);
+    });
+
+    player.addEventListener('ended', playNext);
+
+    searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.trim().toLowerCase();
+        let visibleCount = 0;
+
+        items.forEach(item => {
+            const title = (item.getAttribute('data-title') || '').toLowerCase();
+            const artist = (item.getAttribute('data-artist') || '').toLowerCase();
+
+            if (title.includes(query) || artist.includes(query)) {
+                item.style.display = '';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        if (visibleCount === 0 && query !== '') {
+            noResults.style.display = 'block';
+        } else {
+            noResults.style.display = 'none';
+        }
+    });
+
+    if (items.length > 0) {
+        items[0].classList.add('active');
+        player.src = items[0].getAttribute('data-src');
+        updateMediaSession(items[0].getAttribute('data-title'), items[0].getAttribute('data-artist'));
+    }
+</script>
+
 </body>
 </html>
