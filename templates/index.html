@@ -3,187 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EsteticaNon WebApp</title>
+    <title>Ricerca Canale</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: system-ui, -apple-system, sans-serif;
-        }
-
-        body {
-            background-color: #f4f6f8;
-            color: #333;
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        h1 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-        }
-
-        .search-box {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 25px;
-        }
-
-        input[type="text"] {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #ccc;
-            border-radius: 8px;
-            font-size: 16px;
-        }
-
-        button {
-            padding: 12px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        .card {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            text-align: center;
-            cursor: pointer;
-            border: 1px solid #eee;
-        }
-
-        .card:hover {
-            border-color: #007bff;
-        }
-
-        #risultati {
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            min-height: 100px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .item-risultato {
-            padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .item-risultato:last-child {
-            border-bottom: none;
-        }
+        body { font-family: sans-serif; background: #121212; color: #fff; padding: 20px; }
+        input, button { padding: 10px; font-size: 16px; margin: 5px 0; }
+        input[type="text"] { width: 70%; }
+        .result-item { margin: 10px 0; padding: 10px; background: #222; border-radius: 5px; }
+        a { color: #1db954; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>EsteticaNon WebApp</h1>
-    </header>
+    <h2>Cerca nel Canale</h2>
+    <input type="text" id="searchInput" placeholder="Inserisci il titolo del brano...">
+    <button onclick="searchChannel()">Cerca</button>
 
-    <div class="search-box">
-        <input type="text" id="searchInput" placeholder="Cerca un servizio o un elemento...">
-        <button id="btnCerca">Cerca</button>
-        <button id="btnCasuale" style="background-color: #28a745;">Casuale</button>
-    </div>
-
-    <div class="grid">
-        <div class="card" onclick="selezionaCategoria('Trattamenti Viso')">Trattamenti Viso</div>
-        <div class="card" onclick="selezionaCategoria('Massaggi')">Massaggi</div>
-        <div class="card" onclick="selezionaCategoria('Epilazione')">Epilazione</div>
-        <div class="card" onclick="selezionaCategoria('Manicure & Pedicure')">Manicure</div>
-    </div>
-
-    <div id="risultati">
-        <p style="color: #777;">I risultati della ricerca o del click appariranno qui sotto...</p>
-    </div>
+    <div id="results"></div>
 
     <script>
-        // Dati di prova integrati direttamente nel file
-        const database = [
-            { id: 1, nome: "Pulizia del Viso Profonda", categoria: "Trattamenti Viso" },
-            { id: 2, nome: "Trattamento Anti-Age", categoria: "Trattamenti Viso" },
-            { id: 3, nome: "Massaggio Rilassante 50min", categoria: "Massaggi" },
-            { id: 4, nome: "Massaggio Decontratturante", categoria: "Massaggi" },
-            { id: 5, nome: "Epilazione Laser Gambe", categoria: "Epilazione" },
-            { id: 6, nome: "Epilazione Cera Completa", categoria: "Epilazione" },
-            { id: 7, nome: "Manicure Semipermanente", categoria: "Manicure & Pedicure" },
-            { id: 8, nome: "Pedicure Curativo", categoria: "Manicure & Pedicure" }
-        ];
+        const API_KEY = 'LA_TUA_API_KEY';
+        const CHANNEL_ID = 'IL_TUO_CHANNEL_ID'; // oppure usa playlistId se preferisci una playlist specifica
 
-        const input = document.getElementById('searchInput');
-        const btnCerca = document.getElementById('btnCerca');
-        const btnCasuale = document.getElementById('btnCasuale');
-        const contenitoreRisultati = document.getElementById('risultati');
+        async function searchChannel() {
+            const query = document.getElementById('searchInput').value.trim();
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = 'Ricerca in corso...';
 
-        function mostraRisultati(lista) {
-            if (lista.length === 0) {
-                contenitoreRisultati.innerHTML = '<p style="color: red;">Nessun risultato trovato.</p>';
+            if (!query) {
+                resultsDiv.innerHTML = 'Inserisci un termine di ricerca.';
                 return;
             }
-            let html = '';
-            lista.forEach(item => {
-                html += `<div class="item-risultato">
-                    <strong>${item.nome}</strong> - <small>${item.categoria}</small>
-                </div>`;
-            });
-            contenitoreRisultati.innerHTML = html;
-        }
 
-        function eseguiRicerca() {
-            const testo = input.value.toLowerCase().trim();
-            if (testo === '') {
-                mostraRisultati(database);
-                return;
+            const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${CHANNEL_ID}&q=${encodeURIComponent(query)}&type=video&maxResults=20&key=${API_KEY}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                resultsDiv.innerHTML = '';
+
+                if (!data.items || data.items.length === 0) {
+                    resultsDiv.innerHTML = 'Nessun brano trovato nel canale.';
+                    return;
+                }
+
+                data.items.forEach(item => {
+                    const videoId = item.id.videoId;
+                    const title = item.snippet.title;
+                    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
+                    const div = document.createElement('div');
+                    div.className = 'result-item';
+                    div.innerHTML = `<a href="${videoUrl}" target="_blank">${title}</a>`;
+                    resultsDiv.appendChild(div);
+                });
+            } catch (error) {
+                console.error(error);
+                resultsDiv.innerHTML = 'Errore durante il recupero dei dati dal canale.';
             }
-            const filtrati = database.filter(item => 
-                item.nome.toLowerCase().includes(testo) || 
-                item.categoria.toLowerCase().includes(testo)
-            );
-            mostraRisultati(filtrati);
         }
-
-        function selezionaCategoria(cat) {
-            const filtrati = database.filter(item => item.categoria === cat);
-            mostraRisultati(filtrati);
-        }
-
-        btnCerca.addEventListener('click', eseguiRicerca);
-
-        input.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') {
-                eseguiRicerca();
-            }
-        });
-
-        btnCasuale.addEventListener('click', () => {
-            const elementoCasuale = database[Math.floor(Math.random() * database.length)];
-            mostraRisultati([elementoCasuale]);
-        });
     </script>
-
 </body>
 </html>
