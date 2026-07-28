@@ -53,10 +53,12 @@
             list-style: none;
             padding: 0;
             margin: 0 0 15px 0;
-            max-height: 280px;
+            height: 220px;
+            max-height: 220px;
             overflow-y: auto;
             border: 1px solid #2a2a2a;
             border-radius: 6px;
+            background-color: #181818;
         }
         .playlist li {
             padding: 10px;
@@ -85,24 +87,36 @@
         .playlist li.active .song-artist {
             color: #ddd;
         }
+        .no-results {
+            padding: 15px;
+            text-align: center;
+            color: #888;
+            font-style: italic;
+            display: none;
+        }
         .controls {
             display: flex;
             justify-content: center;
-            gap: 15px;
+            align-items: center;
+            gap: 10px;
             margin-bottom: 15px;
         }
         .btn-control {
             background-color: #004225;
             color: white;
             border: none;
-            padding: 8px 18px;
+            padding: 8px 14px;
             border-radius: 20px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
             transition: background 0.2s;
         }
         .btn-control:hover {
             background-color: #002b18;
+        }
+        .btn-control.active-mode {
+            background-color: #2e8b57;
+            box-shadow: 0 0 8px rgba(46, 139, 87, 0.6);
         }
         audio {
             width: 100%;
@@ -118,17 +132,20 @@
     <input type="text" id="searchInput" class="search-box" placeholder="🔍 Cerca brano o artista...">
 
     <ul class="playlist" id="playlist">
-        {% for song in songs %}
-        <li data-src="{{ song.url }}">
+        {% for song in songs|reverse %}
+        <li data-src="{{ song.url }}" data-title="{{ song.title }}" data-artist="{{ song.artist }}">
             <span class="song-title">{{ song.title }}</span>
             <span class="song-artist">{{ song.artist }}</span>
         </li>
         {% endfor %}
+        <div id="noResults" class="no-results">Nessun brano trovato</div>
     </ul>
 
     <div class="controls">
+        <button class="btn-control" id="shuffleBtn">🔀 Casuale</button>
         <button class="btn-control" id="prevBtn">⏮️ Indietro</button>
         <button class="btn-control" id="nextBtn">Avanti ⏭️</button>
+        <button class="btn-control" id="repeatBtn">🔁 Ripeti</button>
     </div>
 
     <audio id="audioPlayer" controls></audio>
@@ -140,7 +157,32 @@
     const searchInput = document.getElementById('searchInput');
     const prevBtn = document.getElementById('prevBtn');
     const nextBtn = document.getElementById('nextBtn');
+    const shuffleBtn = document.getElementById('shuffleBtn');
+    const repeatBtn = document.getElementById('repeatBtn');
+    const noResults = document.getElementById('noResults');
+
     let currentIndex = 0;
+    let isShuffle = false;
+    let isRepeat = false;
+
+    function getVisibleItems() {
+        return items.filter(item => item.style.display !== 'none');
+    }
+
+    function updateMediaSession(title, artist) {
+        if ('mediaSession' in navigator) {
+            navigator.mediaSession.metadata = new MediaMetadata({
+                title: title || 'Brano Sconosciuto',
+                artist: artist || 'Artista Sconosciuto',
+                album: 'SboGiA Player'
+            });
+
+            navigator.mediaSession.setActionHandler('play', () => player.play());
+            navigator.mediaSession.setActionHandler('pause', () => player.pause());
+            navigator.mediaSession.setActionHandler('previoustrack', playPrev);
+            navigator.mediaSession.setActionHandler('nexttrack', playNext);
+        }
+    }
 
     function playSong(index) {
         if (index < 0 || index >= items.length) return;
@@ -151,9 +193,45 @@
         selected.classList.add('active');
         selected.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
+        const title = selected.getAttribute('data-title');
+        const artist = selected.getAttribute('data-artist');
+
         player.src = selected.getAttribute('data-src');
         currentIndex = index;
         player.play().catch(() => {});
+
+        updateMediaSession(title, artist);
+    }
+
+    function playNext() {
+        if (isRepeat) {
+            playSong(currentIndex);
+            return;
+        }
+
+        const visible = getVisibleItems();
+        if (visible.length === 0) return;
+
+        if (isShuffle) {
+            const randomIndex = Math.floor(Math.random() * visible.length);
+            const targetItem = visible[randomIndex];
+            playSong(items.indexOf(targetItem));
+        } else {
+            const currentVisibleIndex = visible.indexOf(items[currentIndex]);
+            let nextVisibleIndex = currentVisibleIndex + 1;
+            if (nextVisibleIndex >= visible.length) nextVisibleIndex = 0;
+            playSong(items.indexOf(visible[nextVisibleIndex]));
+        }
+    }
+
+    function playPrev() {
+        const visible = getVisibleItems();
+        if (visible.length === 0) return;
+
+        const currentVisibleIndex = visible.indexOf(items[currentIndex]);
+        let prevVisibleIndex = currentVisibleIndex - 1;
+        if (prevVisibleIndex < 0) prevVisibleIndex = visible.length - 1;
+        playSong(items.indexOf(visible[prevVisibleIndex]));
     }
 
     items.forEach((item, index) => {
@@ -162,35 +240,48 @@
         });
     });
 
-    nextBtn.addEventListener('click', () => {
-        let nextIndex = currentIndex + 1;
-        if (nextIndex >= items.length) nextIndex = 0;
-        playSong(nextIndex);
+    nextBtn.addEventListener('click', playNext);
+    prevBtn.addEventListener('click', playPrev);
+
+    shuffleBtn.addEventListener('click', () => {
+        isShuffle = !isShuffle;
+        shuffleBtn.classList.toggle('active-mode', isShuffle);
     });
 
-    prevBtn.addEventListener('click', () => {
-        let prevIndex = currentIndex - 1;
-        if (prevIndex < 0) prevIndex = items.length - 1;
-        playSong(prevIndex);
+    repeatBtn.addEventListener('click', () => {
+        isRepeat = !isRepeat;
+        repeatBtn.classList.toggle('active-mode', isRepeat);
     });
 
-    player.addEventListener('ended', () => {
-        if (currentIndex + 1 < items.length) {
-            playSong(currentIndex + 1);
-        }
-    });
+    player.addEventListener('ended', playNext);
 
     searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase();
+        const query = e.target.value.trim().toLowerCase();
+        let visibleCount = 0;
+
         items.forEach(item => {
-            const text = item.textContent.toLowerCase();
-            item.style.display = text.includes(query) ? '' : 'none';
+            const title = (item.getAttribute('data-title') || '').toLowerCase();
+            const artist = (item.getAttribute('data-artist') || '').toLowerCase();
+
+            if (title.includes(query) || artist.includes(query)) {
+                item.style.display = '';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
         });
+
+        if (visibleCount === 0 && query !== '') {
+            noResults.style.display = 'block';
+        } else {
+            noResults.style.display = 'none';
+        }
     });
 
     if (items.length > 0) {
         items[0].classList.add('active');
         player.src = items[0].getAttribute('data-src');
+        updateMediaSession(items[0].getAttribute('data-title'), items[0].getAttribute('data-artist'));
     }
 </script>
 
