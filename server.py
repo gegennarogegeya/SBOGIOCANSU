@@ -5,7 +5,7 @@ from flask import Flask, jsonify, render_template
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "8968645232:AAEo2FhkwZFrDWRSX1cfqz-SE9M35RBRVkM")
 CHANNEL_ID = os.environ.get("CHANNEL_ID", "-1002093868258")
 
-app = Flask(__name__, template_folder=".")
+app = Flask(__name__)
 
 @app.route("/")
 def home():
