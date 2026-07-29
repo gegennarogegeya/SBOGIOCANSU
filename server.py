@@ -56,7 +56,8 @@ def get_playlist():
                 tracks.append({
                     "title": audio.get("title") or audio.get("file_name") or "Brano sconosciuto",
                     "artist": audio.get("performer") or "Canale Telegram",
-                    "url": stream_url
+                    "url": stream_url,
+                    "channel_id": chat_id
                 })
 
         return jsonify(tracks)
