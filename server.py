@@ -149,3 +149,13 @@ def stream_track(channel, message_id):
 def debug():
     with cache_lock:
         total_tracks = len(tracks_cache)
+
+    return jsonify({
+        "status": "online",
+        "channels": CHANNEL_IDS,
+        "total_tracks": total_tracks
+    })
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", "5000"))
+    app.run(host="0.0.0.0", port=port)
