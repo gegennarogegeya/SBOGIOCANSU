@@ -6,13 +6,13 @@ from telethon import TelegramClient
 
 API_ID = int(os.environ.get("API_ID", 0))
 API_HASH = os.environ.get("API_HASH", "")
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 
 RAW_CHANNELS = os.environ.get("CHANNEL_IDS") or os.environ.get("CHANNEL_ID", "")
 CHANNEL_IDS = [x.strip() for x in RAW_CHANNELS.split(",") if x.strip()]
 
 app = Flask(__name__)
 
-# Creiamo l'event loop per il thread dedicato a Telethon
 loop = asyncio.new_event_loop()
 
 def start_loop(loop):
@@ -22,14 +22,13 @@ def start_loop(loop):
 telethon_thread = Thread(target=start_loop, args=(loop,), daemon=True)
 telethon_thread.start()
 
-# Inizializziamo il client usando la sessione sbogia.session
-client = TelegramClient('sbogia', API_ID, API_HASH, loop=loop)
+# Inizializza il bot senza file di sessione locali
+client = TelegramClient(None, API_ID, API_HASH, loop=loop)
 
 async def connect_client():
     if not client.is_connected():
-        await client.connect()
+        await client.start(bot_token=BOT_TOKEN)
 
-# Connetti il client nel loop di background
 asyncio.run_coroutine_threadsafe(connect_client(), loop)
 
 def parse_channel_id(ch):
@@ -41,7 +40,7 @@ def parse_channel_id(ch):
 async def get_all_tracks():
     tracks = []
     if not client.is_connected():
-        await client.connect()
+        await client.start(bot_token=BOT_TOKEN)
 
     for raw_ch in CHANNEL_IDS:
         target = parse_channel_id(raw_ch)
@@ -80,7 +79,7 @@ async def get_all_tracks():
 async def get_audio_bytes(channel, message_id):
     try:
         if not client.is_connected():
-            await client.connect()
+            await client.start(bot_token=BOT_TOKEN)
         target = parse_channel_id(channel)
         entity = await client.get_entity(target)
         message = await client.get_messages(entity, ids=int(message_id))
@@ -122,7 +121,7 @@ def debug():
         tracks = future.result(timeout=60)
         return jsonify({
             "status": "online",
-            "session_file": "sbogia.session",
+            "bot_mode": True,
             "channels": CHANNEL_IDS,
             "total_tracks": len(tracks)
         })
