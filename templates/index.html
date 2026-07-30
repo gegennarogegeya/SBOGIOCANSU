@@ -110,7 +110,7 @@
         .search-box {
             width: 100%;
             padding: 12px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             border-radius: 8px;
             border: 1px solid #333;
             background-color: #2a2a2a;
@@ -120,6 +120,18 @@
         }
         .search-box:focus {
             border-color: #2e8b57;
+        }
+        .debug-link {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+        .debug-link a {
+            color: #2e8b57;
+            text-decoration: none;
+        }
+        .debug-link a:hover {
+            text-decoration: underline;
         }
         .playlist {
             list-style: none;
@@ -227,6 +239,9 @@
     <!-- DESTRA: LISTA E RICERCA -->
     <div class="content-side">
         <input type="text" id="searchInput" class="search-box" placeholder="🔍 Cerca brano o artista...">
+        <div class="debug-link">
+            Stato servizio: <a href="/api/debug" target="_blank">/api/debug</a>
+        </div>
 
         <ul class="playlist" id="playlist">
             <div id="statusMsg" class="status-msg">Caricamento brani dai canali...</div>
@@ -245,12 +260,22 @@
     const statusMsg = document.getElementById('statusMsg');
     const currentTitle = document.getElementById('currentTitle');
     const currentArtist = document.getElementById('currentArtist');
+    const coverBox = document.getElementById('coverBox');
 
     let songsData = [];
     let items = [];
     let currentIndex = 0;
     let isShuffle = false;
     let isRepeat = false;
+
+    function setError(message) {
+        playlistUl.innerHTML = '';
+        const div = document.createElement('div');
+        div.id = 'statusMsg';
+        div.className = 'status-msg';
+        div.textContent = message;
+        playlistUl.appendChild(div);
+    }
 
     async function loadSongs() {
         try {
@@ -263,7 +288,7 @@
             songsData = await response.json();
 
             if (!songsData || songsData.length === 0) {
-                statusMsg.textContent = 'Nessun brano trovato o lista vuota.';
+                setError('Lista brani vuota. Controlla i canali Telegram o /api/debug.');
                 return;
             }
 
@@ -292,7 +317,7 @@
             }
         } catch (error) {
             console.error(error);
-            statusMsg.textContent = `Errore di connessione: ${error.message}`;
+            setError(`Errore di connessione: ${error.message}`);
         }
     }
 
@@ -329,6 +354,9 @@
 
         currentTitle.textContent = title;
         currentArtist.textContent = artist;
+
+        // segnaposto copertina: per ora solo icona
+        coverBox.textContent = '🎵';
 
         player.src = selected.getAttribute('data-src');
         currentIndex = index;
