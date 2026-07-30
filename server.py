@@ -34,9 +34,10 @@ def parse_channel_id(channel):
 async def ensure_connected():
     if not client.is_connected():
         await client.connect()
-
-    if not await client.is_user_authorized():
+    try:
         await client.start(bot_token=BOT_TOKEN)
+    except Exception:
+        pass
 
 async def load_tracks():
     await ensure_connected()
@@ -115,10 +116,7 @@ async def download_audio(channel, message_id):
 
     return None
 
-def start_refresh():
-    asyncio.create_task(refresh_tracks())
-
-asyncio.run_coroutine_threadsafe(start_refresh(), loop)
+asyncio.run_coroutine_threadsafe(refresh_tracks(), loop)
 
 @app.route("/")
 def home():
