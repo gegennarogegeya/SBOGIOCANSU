@@ -1,45 +1,46 @@
 import os
 import asyncio
+from threading import Thread
 from flask import Flask, jsonify, render_template, Response
 from telethon import TelegramClient
-from telethon.sessions import MemorySession
 
-API_ID = os.environ.get("API_ID")
-API_HASH = os.environ.get("API_HASH")
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
+API_ID = int(os.environ.get("API_ID", 0))
+API_HASH = os.environ.get("API_HASH", "")
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 
 RAW_CHANNELS = os.environ.get("CHANNEL_IDS") or os.environ.get("CHANNEL_ID", "")
 CHANNEL_IDS = [x.strip() for x in RAW_CHANNELS.split(",") if x.strip()]
 
 app = Flask(__name__)
 
+# Usa il file sbogia.session caricato su GitHub
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+client = TelegramClient('sbogia', API_ID, API_HASH, loop=loop)
+
+def start_telethon():
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(client.start(bot_token=BOT_TOKEN))
+    loop.run_forever()
+
+telethon_thread = Thread(target=start_telethon, daemon=True)
+telethon_thread.start()
+
 def parse_channel_id(ch):
-    ch = ch.strip()
     try:
         return int(ch)
     except ValueError:
         return ch
 
-async def fetch_telegram_tracks():
+async def get_all_tracks():
     tracks = []
-    errors = []
-    
-    if not API_ID or not API_HASH or not BOT_TOKEN:
-        return tracks, ["Credenziali API_ID, API_HASH o BOT_TOKEN mancanti!"]
-
-    client = TelegramClient(MemorySession(), int(API_ID), API_HASH)
-    
-    try:
-        await client.start(bot_token=BOT_TOKEN)
-    except Exception as e:
-        return tracks, [f"Errore connessione Telethon: {e}"]
-
     for raw_ch in CHANNEL_IDS:
         target = parse_channel_id(raw_ch)
         try:
-            async for message in client.iter_messages(target, limit=300):
-                audio = message.audio or message.document
-                if audio and (message.audio or (message.document and message.document.mime_type and message.document.mime_type.startswith("audio/"))):
+            entity = await client.get_entity(target)
+            async for message in client.iter_messages(entity, limit=300):
+                if message.audio or (message.document and message.document.mime_type and message.document.mime_type.startswith("audio/")):
+                    audio = message.audio or message.document
                     title = "Brano sconosciuto"
                     artist = "Canale Telegram"
 
@@ -63,27 +64,19 @@ async def fetch_telegram_tracks():
                         "url": f"/api/stream/{raw_ch}/{message.id}"
                     })
         except Exception as e:
-            errors.append(f"Errore canale {raw_ch}: {e}")
+            print(f"Errore canale {raw_ch}: {e}")
 
-    await client.disconnect()
-    return tracks, errors
+    return tracks
 
-async def download_track_bytes(channel, message_id):
-    """Scarica il brano da Telegram in memoria per inviarlo al player"""
-    client = TelegramClient(MemorySession(), int(API_ID), API_HASH)
-    await client.start(bot_token=BOT_TOKEN)
-    
+async def get_audio_bytes(channel, message_id):
     try:
         target = parse_channel_id(channel)
-        message = await client.get_messages(target, ids=int(message_id))
+        entity = await client.get_entity(target)
+        message = await client.get_messages(entity, ids=int(message_id))
         if message and message.media:
-            buffer = await client.download_media(message, file=bytes)
-            return buffer
+            return await client.download_media(message, file=bytes)
     except Exception as e:
-        print(f"Errore download file audio: {e}")
-    finally:
-        await client.disconnect()
-    
+        print(f"Errore download audio: {e}")
     return None
 
 @app.route("/")
@@ -92,38 +85,28 @@ def home():
 
 @app.route("/api/playlist")
 def get_playlist():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    tracks, errors = loop.run_until_complete(fetch_telegram_tracks())
-    loop.close()
+    future = asyncio.run_coroutine_threadsafe(get_all_tracks(), loop)
+    tracks = future.result(timeout=20)
     return jsonify(tracks)
 
-# --- LA ROTTA FANTASMA CHE MANCAVA ---
 @app.route("/api/stream/<channel>/<int:message_id>")
 def stream_track(channel, message_id):
-    """Fornisce lo streaming del file audio richiesto dal player web"""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    audio_bytes = loop.run_until_complete(download_track_bytes(channel, message_id))
-    loop.close()
-
+    future = asyncio.run_coroutine_threadsafe(get_audio_bytes(channel, message_id), loop)
+    audio_bytes = future.result(timeout=40)
+    
     if audio_bytes:
         return Response(audio_bytes, mimetype="audio/mpeg")
-    return "File audio non trovato", 404
+    return "Brano non trovato", 404
 
 @app.route("/api/debug")
 def debug():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    tracks, errors = loop.run_until_complete(fetch_telegram_tracks())
-    loop.close()
+    future = asyncio.run_coroutine_threadsafe(get_all_tracks(), loop)
+    tracks = future.result(timeout=20)
     return jsonify({
-        "api_id_ok": bool(API_ID),
-        "api_hash_ok": bool(API_HASH),
-        "bot_token_ok": bool(BOT_TOKEN),
+        "status": "online",
+        "session_file": "sbogia.session",
         "channels": CHANNEL_IDS,
-        "total_tracks_found": len(tracks),
-        "errors": errors
+        "total_tracks": len(tracks)
     })
 
 if __name__ == "__main__":
