@@ -1,10 +1,10 @@
 import os
 import asyncio
-from threading import Thread
+from threading import Thread, Lock
 from flask import Flask, jsonify, render_template, Response
 from telethon import TelegramClient
 
-API_ID = int(os.environ.get("API_ID", 0))
+API_ID = int(os.environ.get("API_ID", "0"))
 API_HASH = os.environ.get("API_HASH", "")
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 
@@ -14,80 +14,111 @@ CHANNEL_IDS = [x.strip() for x in RAW_CHANNELS.split(",") if x.strip()]
 app = Flask(__name__)
 
 loop = asyncio.new_event_loop()
+tracks_cache = []
+cache_lock = Lock()
 
-def start_loop(loop):
+def start_loop():
     asyncio.set_event_loop(loop)
     loop.run_forever()
 
-telethon_thread = Thread(target=start_loop, args=(loop,), daemon=True)
-telethon_thread.start()
+Thread(target=start_loop, daemon=True).start()
 
-# Inizializza il bot senza file di sessione locali
 client = TelegramClient(None, API_ID, API_HASH, loop=loop)
 
-async def connect_client():
-    if not client.is_connected():
-        await client.start(bot_token=BOT_TOKEN)
-
-asyncio.run_coroutine_threadsafe(connect_client(), loop)
-
-def parse_channel_id(ch):
+def parse_channel_id(channel):
     try:
-        return int(ch)
+        return int(channel)
     except ValueError:
-        return ch
+        return channel
 
-async def get_all_tracks():
-    tracks = []
+async def ensure_connected():
     if not client.is_connected():
+        await client.connect()
+
+    if not await client.is_user_authorized():
         await client.start(bot_token=BOT_TOKEN)
 
-    for raw_ch in CHANNEL_IDS:
-        target = parse_channel_id(raw_ch)
+async def load_tracks():
+    await ensure_connected()
+    tracks = []
+
+    for raw_channel in CHANNEL_IDS:
         try:
-            entity = await client.get_entity(target)
+            entity = await client.get_entity(parse_channel_id(raw_channel))
+
             async for message in client.iter_messages(entity, limit=300):
-                if message.audio or (message.document and message.document.mime_type and message.document.mime_type.startswith("audio/")):
-                    audio = message.audio or message.document
-                    title = "Brano sconosciuto"
-                    artist = "Canale Telegram"
+                if not message.media:
+                    continue
 
-                    if message.audio:
-                        for attr in message.audio.attributes:
-                            if hasattr(attr, 'title') and attr.title:
-                                title = attr.title
-                            if hasattr(attr, 'performer') and attr.performer:
-                                artist = attr.performer
+                audio = message.audio or message.document
+                if not audio:
+                    continue
 
-                    if title == "Brano sconosciuto" and hasattr(audio, 'attributes'):
-                        for attr in audio.attributes:
-                            if hasattr(attr, 'file_name') and attr.file_name:
-                                title = attr.file_name
+                mime_type = getattr(audio, "mime_type", "") or ""
+                if not message.audio and not mime_type.startswith("audio/"):
+                    continue
 
-                    tracks.append({
-                        "id": message.id,
-                        "title": title,
-                        "artist": artist,
-                        "channel_id": str(raw_ch),
-                        "url": f"/api/stream/{raw_ch}/{message.id}"
-                    })
-        except Exception as e:
-            print(f"Errore canale {raw_ch}: {e}")
+                title = "Brano sconosciuto"
+                artist = "Canale Telegram"
+
+                for attr in getattr(audio, "attributes", []):
+                    if getattr(attr, "title", None):
+                        title = attr.title
+                    if getattr(attr, "performer", None):
+                        artist = attr.performer
+                    if title == "Brano sconosciuto" and getattr(attr, "file_name", None):
+                        title = attr.file_name
+
+                tracks.append({
+                    "id": message.id,
+                    "title": title,
+                    "artist": artist,
+                    "channel_id": str(raw_channel),
+                    "url": f"/api/stream/{raw_channel}/{message.id}"
+                })
+
+            print(f"Canale OK: {raw_channel}")
+
+        except Exception as error:
+            print(f"ERRORE CANALE {raw_channel}: {repr(error)}")
 
     return tracks
 
-async def get_audio_bytes(channel, message_id):
+async def refresh_tracks():
+    global tracks_cache
+
+    while True:
+        try:
+            new_tracks = await asyncio.wait_for(load_tracks(), timeout=25)
+
+            with cache_lock:
+                tracks_cache = new_tracks
+
+            print(f"Playlist aggiornata: {len(new_tracks)} brani")
+
+        except Exception as error:
+            print(f"ERRORE AGGIORNAMENTO PLAYLIST: {repr(error)}")
+
+        await asyncio.sleep(120)
+
+async def download_audio(channel, message_id):
     try:
-        if not client.is_connected():
-            await client.start(bot_token=BOT_TOKEN)
-        target = parse_channel_id(channel)
-        entity = await client.get_entity(target)
+        await ensure_connected()
+        entity = await client.get_entity(parse_channel_id(channel))
         message = await client.get_messages(entity, ids=int(message_id))
+
         if message and message.media:
             return await client.download_media(message, file=bytes)
-    except Exception as e:
-        print(f"Errore download audio: {e}")
+
+    except Exception as error:
+        print(f"ERRORE DOWNLOAD AUDIO: {repr(error)}")
+
     return None
+
+def start_refresh():
+    asyncio.create_task(refresh_tracks())
+
+asyncio.run_coroutine_threadsafe(start_refresh(), loop)
 
 @app.route("/")
 def home():
@@ -95,39 +126,41 @@ def home():
 
 @app.route("/api/playlist")
 def get_playlist():
-    try:
-        future = asyncio.run_coroutine_threadsafe(get_all_tracks(), loop)
-        tracks = future.result(timeout=60)
-        return jsonify(tracks)
-    except Exception as e:
-        print(f"Errore playlist: {e}")
-        return jsonify({"error": str(e)}), 500
+    with cache_lock:
+        return jsonify(tracks_cache)
 
 @app.route("/api/stream/<channel>/<int:message_id>")
 def stream_track(channel, message_id):
     try:
-        future = asyncio.run_coroutine_threadsafe(get_audio_bytes(channel, message_id), loop)
-        audio_bytes = future.result(timeout=60)
+        future = asyncio.run_coroutine_threadsafe(
+            download_audio(channel, message_id),
+            loop
+        )
+        audio_bytes = future.result(timeout=25)
+
         if audio_bytes:
-            return Response(audio_bytes, mimetype="audio/mpeg")
-    except Exception as e:
-        print(f"Errore stream: {e}")
+            return Response(
+                audio_bytes,
+                mimetype="audio/mpeg",
+                headers={"Accept-Ranges": "bytes"}
+            )
+
+    except Exception as error:
+        print(f"ERRORE STREAM: {repr(error)}")
+
     return "Brano non trovato", 404
 
 @app.route("/api/debug")
 def debug():
-    try:
-        future = asyncio.run_coroutine_threadsafe(get_all_tracks(), loop)
-        tracks = future.result(timeout=60)
-        return jsonify({
-            "status": "online",
-            "bot_mode": True,
-            "channels": CHANNEL_IDS,
-            "total_tracks": len(tracks)
-        })
-    except Exception as e:
-        return jsonify({"status": "error", "details": str(e)}), 500
+    with cache_lock:
+        total_tracks = len(tracks_cache)
+
+    return jsonify({
+        "status": "online",
+        "channels": CHANNEL_IDS,
+        "total_tracks": total_tracks
+    })
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", "5000"))
     app.run(host="0.0.0.0", port=port)
