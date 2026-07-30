@@ -1,41 +1,45 @@
 import os
 import asyncio
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, Response
 from telethon import TelegramClient
+from telethon.sessions import MemorySession
 
-# Credenziali dalle variabili d'ambiente di Render
-API_ID = int(os.environ.get("API_ID", 0))
-API_HASH = os.environ.get("API_HASH", "")
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
+API_ID = os.environ.get("API_ID")
+API_HASH = os.environ.get("API_HASH")
+BOT_TOKEN = os.environ.get("BOT_TOKEN")
 
-# Gestisce sia CHANNEL_IDS che CHANNEL_ID (separati da virgola se sono più di uno)
 RAW_CHANNELS = os.environ.get("CHANNEL_IDS") or os.environ.get("CHANNEL_ID", "")
 CHANNEL_IDS = [x.strip() for x in RAW_CHANNELS.split(",") if x.strip()]
 
 app = Flask(__name__)
 
-async def fetch_telegram_tracks():
-    """Scansiona i canali Telegram usando Telethon e recupera tutti i brani audio."""
-    tracks = []
-    
-    # Inizializza il client Telethon in modalità Bot
-    client = TelegramClient('bot_session', API_ID, API_HASH)
-    await client.start(bot_token=BOT_TOKEN)
-
+def parse_channel_id(ch):
+    ch = ch.strip()
     try:
-        for channel in CHANNEL_IDS:
-            # Converti in intero se è un ID numerico (es. -100123456789) oppure mantieni la stringa se è l'username (es. @mio_canale)
-            try:
-                target_channel = int(channel)
-            except ValueError:
-                target_channel = channel
+        return int(ch)
+    except ValueError:
+        return ch
 
-            # Scorri tutti i messaggi del canale
-            async for message in client.iter_messages(target_channel):
-                if message.audio or (message.document and message.document.mime_type and message.document.mime_type.startswith("audio/")):
-                    audio = message.audio or message.document
-                    
-                    # Estrai i metadati dall'attributo audio se presente
+async def fetch_telegram_tracks():
+    tracks = []
+    errors = []
+    
+    if not API_ID or not API_HASH or not BOT_TOKEN:
+        return tracks, ["Credenziali API_ID, API_HASH o BOT_TOKEN mancanti!"]
+
+    client = TelegramClient(MemorySession(), int(API_ID), API_HASH)
+    
+    try:
+        await client.start(bot_token=BOT_TOKEN)
+    except Exception as e:
+        return tracks, [f"Errore connessione Telethon: {e}"]
+
+    for raw_ch in CHANNEL_IDS:
+        target = parse_channel_id(raw_ch)
+        try:
+            async for message in client.iter_messages(target, limit=300):
+                audio = message.audio or message.document
+                if audio and (message.audio or (message.document and message.document.mime_type and message.document.mime_type.startswith("audio/"))):
                     title = "Brano sconosciuto"
                     artist = "Canale Telegram"
 
@@ -45,49 +49,38 @@ async def fetch_telegram_tracks():
                                 title = attr.title
                             if hasattr(attr, 'performer') and attr.performer:
                                 artist = attr.performer
-                    
-                    # Se il titolo non è trovato, usa il nome del file
+
                     if title == "Brano sconosciuto" and hasattr(audio, 'attributes'):
                         for attr in audio.attributes:
                             if hasattr(attr, 'file_name') and attr.file_name:
                                 title = attr.file_name
 
-                    # Genera l'URL di streaming diretto al messaggio o al file
-                    # Telegram Bot API standard per fare streaming richiede la rotto getFile
-                    # Qui costruiamo un endpoint interno/link al file
                     tracks.append({
                         "id": message.id,
                         "title": title,
                         "artist": artist,
-                        "channel_id": str(channel),
-                        # Endpoint per lo streaming diretto del file
-                        "url": f"/api/stream/{channel}/{message.id}"
+                        "channel_id": str(raw_ch),
+                        "url": f"/api/stream/{raw_ch}/{message.id}"
                     })
-    except Exception as e:
-        print(f"Errore durante la scansione dei canali: {e}")
-    finally:
-        await client.disconnect()
+        except Exception as e:
+            errors.append(f"Errore canale {raw_ch}: {e}")
 
-    return tracks
+    await client.disconnect()
+    return tracks, errors
 
 async def download_track_bytes(channel, message_id):
-    """Scarica il file di un brano specifico in memoria per inviarlo al browser."""
-    client = TelegramClient('bot_session', API_ID, API_HASH)
+    """Scarica il brano da Telegram in memoria per inviarlo al player"""
+    client = TelegramClient(MemorySession(), int(API_ID), API_HASH)
     await client.start(bot_token=BOT_TOKEN)
     
     try:
-        try:
-            target_channel = int(channel)
-        except ValueError:
-            target_channel = channel
-
-        message = await client.get_messages(target_channel, ids=int(message_id))
+        target = parse_channel_id(channel)
+        message = await client.get_messages(target, ids=int(message_id))
         if message and message.media:
-            # Scarica il file in memoria
             buffer = await client.download_media(message, file=bytes)
             return buffer
     except Exception as e:
-        print(f"Errore download file: {e}")
+        print(f"Errore download file audio: {e}")
     finally:
         await client.disconnect()
     
@@ -99,29 +92,39 @@ def home():
 
 @app.route("/api/playlist")
 def get_playlist():
-    if not API_ID or not API_HASH or not BOT_TOKEN or not CHANNEL_IDS:
-        return jsonify([])
-
-    # Esegui la funzione asincrona di Telethon dentro la rotta Flask
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    tracks = loop.run_until_complete(fetch_telegram_tracks())
+    tracks, errors = loop.run_until_complete(fetch_telegram_tracks())
     loop.close()
-
     return jsonify(tracks)
 
+# --- LA ROTTA FANTASMA CHE MANCAVA ---
 @app.route("/api/stream/<channel>/<int:message_id>")
 def stream_track(channel, message_id):
-    """Route per lo streaming audio del singolo brano."""
+    """Fornisce lo streaming del file audio richiesto dal player web"""
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     audio_bytes = loop.run_until_complete(download_track_bytes(channel, message_id))
     loop.close()
 
     if audio_bytes:
-        from flask import Response
         return Response(audio_bytes, mimetype="audio/mpeg")
-    return "File non trovato", 440
+    return "File audio non trovato", 404
+
+@app.route("/api/debug")
+def debug():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    tracks, errors = loop.run_until_complete(fetch_telegram_tracks())
+    loop.close()
+    return jsonify({
+        "api_id_ok": bool(API_ID),
+        "api_hash_ok": bool(API_HASH),
+        "bot_token_ok": bool(BOT_TOKEN),
+        "channels": CHANNEL_IDS,
+        "total_tracks_found": len(tracks),
+        "errors": errors
+    })
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
