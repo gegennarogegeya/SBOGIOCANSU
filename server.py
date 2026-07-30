@@ -6,21 +6,19 @@ from telethon import TelegramClient
 
 API_ID = int(os.environ.get("API_ID", 0))
 API_HASH = os.environ.get("API_HASH", "")
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 
 RAW_CHANNELS = os.environ.get("CHANNEL_IDS") or os.environ.get("CHANNEL_ID", "")
 CHANNEL_IDS = [x.strip() for x in RAW_CHANNELS.split(",") if x.strip()]
 
 app = Flask(__name__)
 
-# Usa il file sbogia.session caricato su GitHub
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 client = TelegramClient('sbogia', API_ID, API_HASH, loop=loop)
 
 def start_telethon():
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(client.start(bot_token=BOT_TOKEN))
+    loop.run_until_complete(client.start())
     loop.run_forever()
 
 telethon_thread = Thread(target=start_telethon, daemon=True)
