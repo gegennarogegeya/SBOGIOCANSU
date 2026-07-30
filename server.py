@@ -6,7 +6,6 @@ from telethon import TelegramClient
 
 API_ID = int(os.environ.get("API_ID", "0"))
 API_HASH = os.environ.get("API_HASH", "")
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "")
 
 RAW_CHANNELS = os.environ.get("CHANNEL_IDS") or os.environ.get("CHANNEL_ID", "")
 CHANNEL_IDS = [x.strip() for x in RAW_CHANNELS.split(",") if x.strip()]
@@ -23,7 +22,8 @@ def start_loop():
 
 Thread(target=start_loop, daemon=True).start()
 
-client = TelegramClient(None, API_ID, API_HASH, loop=loop)
+# usa la sessione utente salvata (file sbogia.session)
+client = TelegramClient("sbogia.session", API_ID, API_HASH, loop=loop)
 
 def parse_channel_id(channel):
     try:
@@ -34,10 +34,7 @@ def parse_channel_id(channel):
 async def ensure_connected():
     if not client.is_connected():
         await client.connect()
-    try:
-        await client.start(bot_token=BOT_TOKEN)
-    except Exception:
-        pass
+    # nessun bot_token: sessione utente già autorizzata
 
 async def load_tracks():
     await ensure_connected()
@@ -152,13 +149,3 @@ def stream_track(channel, message_id):
 def debug():
     with cache_lock:
         total_tracks = len(tracks_cache)
-
-    return jsonify({
-        "status": "online",
-        "channels": CHANNEL_IDS,
-        "total_tracks": total_tracks
-    })
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", "5000"))
-    app.run(host="0.0.0.0", port=port)
