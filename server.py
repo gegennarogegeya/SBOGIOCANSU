@@ -12,17 +12,25 @@ CHANNEL_IDS = [x.strip() for x in RAW_CHANNELS.split(",") if x.strip()]
 
 app = Flask(__name__)
 
+# Creiamo l'event loop per il thread dedicato a Telethon
 loop = asyncio.new_event_loop()
-asyncio.set_event_loop(loop)
-client = TelegramClient('sbogia', API_ID, API_HASH, loop=loop)
 
-def start_telethon():
+def start_loop(loop):
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(client.start())
     loop.run_forever()
 
-telethon_thread = Thread(target=start_telethon, daemon=True)
+telethon_thread = Thread(target=start_loop, args=(loop,), daemon=True)
 telethon_thread.start()
+
+# Inizializziamo il client usando la sessione sbogia.session
+client = TelegramClient('sbogia', API_ID, API_HASH, loop=loop)
+
+async def connect_client():
+    if not client.is_connected():
+        await client.connect()
+
+# Connetti il client nel loop di background
+asyncio.run_coroutine_threadsafe(connect_client(), loop)
 
 def parse_channel_id(ch):
     try:
@@ -32,6 +40,9 @@ def parse_channel_id(ch):
 
 async def get_all_tracks():
     tracks = []
+    if not client.is_connected():
+        await client.connect()
+
     for raw_ch in CHANNEL_IDS:
         target = parse_channel_id(raw_ch)
         try:
@@ -68,6 +79,8 @@ async def get_all_tracks():
 
 async def get_audio_bytes(channel, message_id):
     try:
+        if not client.is_connected():
+            await client.connect()
         target = parse_channel_id(channel)
         entity = await client.get_entity(target)
         message = await client.get_messages(entity, ids=int(message_id))
@@ -83,29 +96,38 @@ def home():
 
 @app.route("/api/playlist")
 def get_playlist():
-    future = asyncio.run_coroutine_threadsafe(get_all_tracks(), loop)
-    tracks = future.result(timeout=20)
-    return jsonify(tracks)
+    try:
+        future = asyncio.run_coroutine_threadsafe(get_all_tracks(), loop)
+        tracks = future.result(timeout=60)
+        return jsonify(tracks)
+    except Exception as e:
+        print(f"Errore playlist: {e}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/api/stream/<channel>/<int:message_id>")
 def stream_track(channel, message_id):
-    future = asyncio.run_coroutine_threadsafe(get_audio_bytes(channel, message_id), loop)
-    audio_bytes = future.result(timeout=40)
-    
-    if audio_bytes:
-        return Response(audio_bytes, mimetype="audio/mpeg")
+    try:
+        future = asyncio.run_coroutine_threadsafe(get_audio_bytes(channel, message_id), loop)
+        audio_bytes = future.result(timeout=60)
+        if audio_bytes:
+            return Response(audio_bytes, mimetype="audio/mpeg")
+    except Exception as e:
+        print(f"Errore stream: {e}")
     return "Brano non trovato", 404
 
 @app.route("/api/debug")
 def debug():
-    future = asyncio.run_coroutine_threadsafe(get_all_tracks(), loop)
-    tracks = future.result(timeout=20)
-    return jsonify({
-        "status": "online",
-        "session_file": "sbogia.session",
-        "channels": CHANNEL_IDS,
-        "total_tracks": len(tracks)
-    })
+    try:
+        future = asyncio.run_coroutine_threadsafe(get_all_tracks(), loop)
+        tracks = future.result(timeout=60)
+        return jsonify({
+            "status": "online",
+            "session_file": "sbogia.session",
+            "channels": CHANNEL_IDS,
+            "total_tracks": len(tracks)
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "details": str(e)}), 500
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
