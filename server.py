@@ -1,6 +1,5 @@
 import os
 import asyncio
-from threading import Thread, Lock
 from flask import Flask, jsonify, render_template, Response
 from telethon import TelegramClient
 from telethon.sessions import StringSession
@@ -14,22 +13,9 @@ CHANNEL_IDS = [x.strip() for x in RAW_CHANNELS.split(",") if x.strip()]
 
 app = Flask(__name__)
 
-loop = asyncio.new_event_loop()
+client = TelegramClient(StringSession(TG_STRING_SESSION), API_ID, API_HASH)
+
 tracks_cache = []
-cache_lock = Lock()
-
-def start_loop():
-    asyncio.set_event_loop(loop)
-    loop.run_forever()
-
-Thread(target=start_loop, daemon=True).start()
-
-client = TelegramClient(
-    StringSession(TG_STRING_SESSION),
-    API_ID,
-    API_HASH,
-    loop=loop
-)
 
 def parse_channel_id(channel):
     try:
@@ -37,12 +23,8 @@ def parse_channel_id(channel):
     except ValueError:
         return channel
 
-async def ensure_connected():
-    if not client.is_connected():
-        await client.connect()
-
 async def load_tracks():
-    await ensure_connected()
+    await client.connect()
     tracks = []
 
     for raw_channel in CHANNEL_IDS:
@@ -88,24 +70,44 @@ async def load_tracks():
     print(f"Playlist aggiornata: {len(tracks)} brani totali")
     return tracks
 
-async def refresh_tracks():
+def load_tracks_sync():
     global tracks_cache
+    try:
+        loop = asyncio.new_event_loop()
+        tracks_cache = loop.run_until_complete(load_tracks())
+        loop.close()
+    except Exception as error:
+        print(f"ERRORE: {repr(error)}")
 
-    while True:
-        try:
-            new_tracks = await asyncio.wait_for(load_tracks(), timeout=60)
+# Carica i brani all'avvio
+load_tracks_sync()
 
-            with cache_lock:
-                tracks_cache = new_tracks
+@app.route("/")
+def home():
+    return render_template("index.html")
 
-        except Exception as error:
-            print(f"ERRORE AGGIORNAMENTO PLAYLIST: {repr(error)}")
+@app.route("/api/playlist")
+def get_playlist():
+    return jsonify(tracks_cache)
 
-        await asyncio.sleep(180)
+@app.route("/api/stream/<channel>/<int:message_id>")
+def stream_track(channel, message_id):
+    try:
+        loop = asyncio.new_event_loop()
+        audio_bytes = loop.run_until_complete(download_audio(channel, message_id))
+        loop.close()
+
+        if audio_bytes:
+            return Response(audio_bytes, mimetype="audio/mpeg", headers={"Accept-Ranges": "bytes"})
+
+    except Exception as error:
+        print(f"ERRORE STREAM: {repr(error)}")
+
+    return "Brano non trovato", 404
 
 async def download_audio(channel, message_id):
     try:
-        await ensure_connected()
+        await client.connect()
         target = parse_channel_id(channel)
         entity = await client.get_entity(target)
         message = await client.get_messages(entity, ids=int(message_id))
@@ -118,47 +120,12 @@ async def download_audio(channel, message_id):
 
     return None
 
-asyncio.run_coroutine_threadsafe(refresh_tracks(), loop)
-
-@app.route("/")
-def home():
-    return render_template("index.html")
-
-@app.route("/api/playlist")
-def get_playlist():
-    with cache_lock:
-        return jsonify(tracks_cache)
-
-@app.route("/api/stream/<channel>/<int:message_id>")
-def stream_track(channel, message_id):
-    try:
-        future = asyncio.run_coroutine_threadsafe(
-            download_audio(channel, message_id),
-            loop
-        )
-        audio_bytes = future.result(timeout=60)
-
-        if audio_bytes:
-            return Response(
-                audio_bytes,
-                mimetype="audio/mpeg",
-                headers={"Accept-Ranges": "bytes"}
-            )
-
-    except Exception as error:
-        print(f"ERRORE STREAM: {repr(error)}")
-
-    return "Brano non trovato", 404
-
 @app.route("/api/debug")
 def debug():
-    with cache_lock:
-        total_tracks = len(tracks_cache)
-
     return jsonify({
         "status": "online",
         "channels": CHANNEL_IDS,
-        "total_tracks": total_tracks
+        "total_tracks": len(tracks_cache)
     })
 
 if __name__ == "__main__":
