@@ -73,7 +73,6 @@ async def load_tracks():
 
 async def download_audio(channel, message_id):
     try:
-        await client.connect()
         target = parse_channel_id(channel)
         entity = await client.get_entity(target)
         message = await client.get_messages(entity, ids=int(message_id))
