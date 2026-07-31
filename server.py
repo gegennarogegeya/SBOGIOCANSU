@@ -13,7 +13,8 @@ CHANNEL_IDS = [x.strip() for x in RAW_CHANNELS.split(",") if x.strip()]
 
 app = Flask(__name__)
 
-client = TelegramClient(StringSession(TG_STRING_SESSION), API_ID, API_HASH)
+loop = asyncio.new_event_loop()
+client = TelegramClient(StringSession(TG_STRING_SESSION), API_ID, API_HASH, loop=loop)
 
 tracks_cache = []
 
@@ -70,41 +71,6 @@ async def load_tracks():
     print(f"Playlist aggiornata: {len(tracks)} brani totali")
     return tracks
 
-def load_tracks_sync():
-    global tracks_cache
-    try:
-        loop = asyncio.new_event_loop()
-        tracks_cache = loop.run_until_complete(load_tracks())
-        loop.close()
-    except Exception as error:
-        print(f"ERRORE: {repr(error)}")
-
-# Carica i brani all'avvio
-load_tracks_sync()
-
-@app.route("/")
-def home():
-    return render_template("index.html")
-
-@app.route("/api/playlist")
-def get_playlist():
-    return jsonify(tracks_cache)
-
-@app.route("/api/stream/<channel>/<int:message_id>")
-def stream_track(channel, message_id):
-    try:
-        loop = asyncio.new_event_loop()
-        audio_bytes = loop.run_until_complete(download_audio(channel, message_id))
-        loop.close()
-
-        if audio_bytes:
-            return Response(audio_bytes, mimetype="audio/mpeg", headers={"Accept-Ranges": "bytes"})
-
-    except Exception as error:
-        print(f"ERRORE STREAM: {repr(error)}")
-
-    return "Brano non trovato", 404
-
 async def download_audio(channel, message_id):
     try:
         await client.connect()
@@ -119,6 +85,36 @@ async def download_audio(channel, message_id):
         print(f"ERRORE DOWNLOAD AUDIO: {repr(error)}")
 
     return None
+
+def load_tracks_sync():
+    global tracks_cache
+    try:
+        tracks_cache = loop.run_until_complete(load_tracks())
+    except Exception as error:
+        print(f"ERRORE: {repr(error)}")
+
+load_tracks_sync()
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+@app.route("/api/playlist")
+def get_playlist():
+    return jsonify(tracks_cache)
+
+@app.route("/api/stream/<channel>/<int:message_id>")
+def stream_track(channel, message_id):
+    try:
+        audio_bytes = loop.run_until_complete(download_audio(channel, message_id))
+
+        if audio_bytes:
+            return Response(audio_bytes, mimetype="audio/mpeg", headers={"Accept-Ranges": "bytes"})
+
+    except Exception as error:
+        print(f"ERRORE STREAM: {repr(error)}")
+
+    return "Brano non trovato", 404
 
 @app.route("/api/debug")
 def debug():
