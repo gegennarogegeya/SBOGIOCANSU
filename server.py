@@ -1,6 +1,6 @@
 import os
 import asyncio
-from flask import Flask, jsonify, render_template, Response
+from flask import Flask, jsonify, render_template, Response, stream_with_context
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 
@@ -108,7 +108,14 @@ def stream_track(channel, message_id):
         audio_bytes = loop.run_until_complete(download_audio(channel, message_id))
 
         if audio_bytes:
-            return Response(audio_bytes, mimetype="audio/mpeg", headers={"Accept-Ranges": "bytes"})
+            return Response(
+                audio_bytes,
+                mimetype="audio/mpeg",
+                headers={
+                    "Accept-Ranges": "bytes",
+                    "Content-Length": str(len(audio_bytes))
+                }
+            )
 
     except Exception as error:
         print(f"ERRORE STREAM: {repr(error)}")
