@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SboGiA Player</title>
+    <title>Sbogia Player 1972</title>
     <style>
         * {
             box-sizing: border-box;
         }
         body {
             font-family: Arial, sans-serif;
-            background-color: #121212;
+            background-color: #000000;
             color: #ffffff;
             margin: 0;
             padding: 20px;
@@ -36,13 +36,13 @@
                 flex-direction: column;
             }
         }
-        
-        /* Sezione Sinistra: Player */
+
+        /* Sezione Sinistra: Sbogia Player 1972 */
         .player-side {
             flex: 1;
             display: flex;
             flex-direction: column;
-            align-items: center;
+            align-items: stretch;
             justify-content: center;
             padding-right: 15px;
             border-right: 1px solid #2a2a2a;
@@ -55,53 +55,285 @@
                 padding-bottom: 20px;
             }
         }
-        .cover-box {
-            width: 100%;
-            max-width: 280px;
-            height: 280px;
-            background-color: #181818;
-            border-radius: 12px;
-            border: 1px solid #333;
+
+        .sbogia-wrapper {
+            background: #121212;
+            border-radius: 8px;
+            padding: 16px 18px 18px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+            border: 1px solid #2a2a2a;
+        }
+
+        .sbogia-top {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            justify-content: center;
-            font-size: 64px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            overflow: hidden;
+            margin-bottom: 10px;
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
         }
-        .cover-box img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
+
+        .sbogia-brand {
+            font-weight: 600;
         }
-        .track-info {
+
+        .sbogia-label {
+            opacity: 0.7;
+        }
+
+        .sbogia-display {
+            background: #050505;
+            border-radius: 4px;
+            padding: 10px 14px;
+            border: 1px solid #2a2a2a;
+        }
+
+        .sbogia-display-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 11px;
+        }
+
+        .sbogia-mode {
+            color: #c5c5c5;
+            font-weight: 500;
+        }
+
+        .sbogia-info {
+            color: #e8f0c0;
+            font-weight: 500;
             text-align: center;
-            margin-bottom: 15px;
-            width: 100%;
-        }
-        .track-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #ffffff;
-            margin-bottom: 5px;
+            flex: 1;
+            padding: 0 8px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .track-artist {
-            font-size: 14px;
-            color: #aaa;
+
+        .sbogia-channel {
+            color: #c5c5c5;
         }
-        h1 {
-            color: #2e8b57;
-            font-size: 24px;
-            margin-top: 0;
-            margin-bottom: 15px;
-            text-align: center;
+
+        /* Equalizer stile Sony */
+        .sbogia-eq {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
         }
-        
-        /* Sezione Destra: Copertine / Lista */
+
+        .sbogia-eq-side {
+            width: 8px;
+            height: 42px;
+            background: linear-gradient(to bottom, #ff3b3b, #aa1515);
+            border-radius: 2px;
+            position: relative;
+            box-shadow: 0 0 6px rgba(255, 60, 60, 0.5);
+        }
+
+        .sbogia-eq-side::before,
+        .sbogia-eq-side::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            width: 2px;
+            height: 2px;
+            background: #ffffe0;
+            transform: translateX(-50%);
+        }
+
+        .sbogia-eq-side::before {
+            top: 6px;
+        }
+        .sbogia-eq-side::after {
+            bottom: 6px;
+        }
+
+        .sbogia-eq-columns {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .sbogia-eq-col {
+            width: 8%;
+            height: 42px;
+            display: flex;
+            flex-direction: column-reverse;
+            justify-content: flex-start;
+            gap: 1px;
+            transform-origin: bottom;
+            animation: sbogiaEqPulse 1.8s infinite ease-in-out;
+        }
+
+        .sbogia-eq-col::before {
+            content: "";
+            display: block;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(
+                to top,
+                #bfc4a5 10%,
+                #bfc4a5 10%,
+                transparent 10%
+            );
+            background-size: 100% 3px;
+            background-repeat: repeat-y;
+            border-radius: 1px;
+            opacity: 0.85;
+        }
+
+        @keyframes sbogiaEqPulse {
+            0%   { transform: scaleY(0.6); }
+            25%  { transform: scaleY(0.9); }
+            50%  { transform: scaleY(0.5); }
+            75%  { transform: scaleY(0.8); }
+            100% { transform: scaleY(0.7); }
+        }
+
+        .sbogia-eq-col:nth-child(2)  { animation-delay: 0.2s; }
+        .sbogia-eq-col:nth-child(3)  { animation-delay: 0.4s; }
+        .sbogia-eq-col:nth-child(4)  { animation-delay: 0.6s; }
+        .sbogia-eq-col:nth-child(5)  { animation-delay: 0.8s; }
+        .sbogia-eq-col:nth-child(6)  { animation-delay: 1.0s; }
+        .sbogia-eq-col:nth-child(7)  { animation-delay: 1.2s; }
+        .sbogia-eq-col:nth-child(8)  { animation-delay: 1.4s; }
+
+        /* Controlli principali */
+        .sbogia-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            margin-bottom: 8px;
+        }
+
+        .sbogia-btn {
+            background: #202020;
+            border: 1px solid #404040;
+            color: #e5e5e5;
+            font-size: 11px;
+            padding: 6px 10px;
+            border-radius: 2px;
+            cursor: pointer;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .sbogia-btn-small {
+            padding: 5px 8px;
+        }
+
+        .sbogia-btn-tiny {
+            padding: 3px 6px;
+            font-size: 10px;
+        }
+
+        .sbogia-btn:hover {
+            background: #2a2a2a;
+        }
+
+        .sbogia-btn:active {
+            background: #101010;
+        }
+
+        .sbogia-btn.active-mode {
+            background-color: #2e8b57;
+            box-shadow: 0 0 8px rgba(46, 139, 87, 0.6);
+        }
+
+        /* Parte inferiore: volume + source + audio */
+        .sbogia-bottom {
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sbogia-bottom-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .sbogia-volume-block,
+        .sbogia-source-block {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .sbogia-volume-label,
+        .sbogia-source-label {
+            font-size: 10px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        .sbogia-volume-knob {
+            width: 120px;
+            height: 32px;
+            border-radius: 16px;
+            background: #1a1a1a;
+            border: 1px solid #303030;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+        }
+
+        #sbogia-volume-range {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+        }
+
+        #sbogia-volume-range::-webkit-slider-runnable-track {
+            height: 3px;
+            background: #c0c0c0;
+        }
+
+        #sbogia-volume-range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #f5f5f5;
+            border: 1px solid #888;
+            margin-top: -4px;
+        }
+
+        #sbogia-volume-range::-moz-range-track {
+            height: 3px;
+            background: #c0c0c0;
+        }
+
+        #sbogia-volume-range::-moz-range-thumb {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #f5f5f5;
+            border: 1px solid #888;
+        }
+
+        .sbogia-source-buttons {
+            display: flex;
+            gap: 4px;
+        }
+
+        .sbogia-audio-wrap audio {
+            width: 100%;
+            border-radius: 30px;
+            margin-top: 6px;
+        }
+
+        /* Sezione Destra: Copertine / Lista (come prima) */
         .content-side {
             flex: 1.2;
             display: flex;
@@ -179,64 +411,78 @@
             color: #ff6b6b;
             font-style: italic;
         }
-        .controls {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-            width: 100%;
-        }
-        .btn-control {
-            background-color: #004225;
-            color: white;
-            border: none;
-            padding: 8px 14px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: background 0.2s;
-        }
-        .btn-control:hover {
-            background-color: #002b18;
-        }
-        .btn-control.active-mode {
-            background-color: #2e8b57;
-            box-shadow: 0 0 8px rgba(46, 139, 87, 0.6);
-        }
-        audio {
-            width: 100%;
-            border-radius: 30px;
-        }
     </style>
 </head>
 <body>
 
 <div class="app-layout">
-    <!-- SINISTRA: PLAYER ED ELEMENTI DI RIPRODUZIONE -->
+    <!-- SINISTRA: Sbogia Player 1972 -->
     <div class="player-side">
-        <h1>SboGiA Player</h1>
-        
-        <div class="cover-box" id="coverBox">
-            🎵
-        </div>
+        <div class="sbogia-wrapper">
+            <div class="sbogia-top">
+                <span class="sbogia-brand">Sbogia Player 1972</span>
+                <span class="sbogia-label">DIGITAL HI-FI SYSTEM</span>
+            </div>
 
-        <div class="track-info">
-            <div class="track-title" id="currentTitle">Seleziona un brano</div>
-            <div class="track-artist" id="currentArtist">-</div>
-        </div>
+            <div class="sbogia-display">
+                <div class="sbogia-display-header">
+                    <span class="sbogia-mode" id="sbogia-mode">TRACK</span>
+                    <span class="sbogia-info" id="currentTitle">Seleziona un brano</span>
+                    <span class="sbogia-channel" id="sbogia-channel">CH A</span>
+                </div>
 
-        <div class="controls">
-            <button class="btn-control" id="shuffleBtn">🔀 Casuale</button>
-            <button class="btn-control" id="prevBtn">⏮️ Indietro</button>
-            <button class="btn-control" id="nextBtn">Avanti ⏭️</button>
-            <button class="btn-control" id="repeatBtn">🔁 Ripeti</button>
-        </div>
+                <div class="sbogia-eq">
+                    <div class="sbogia-eq-side sbogia-eq-side-left"></div>
 
-        <audio id="audioPlayer" controls></audio>
+                    <div class="sbogia-eq-columns">
+                        <div class="sbogia-eq-col"></div>
+                        <div class="sbogia-eq-col"></div>
+                        <div class="sbogia-eq-col"></div>
+                        <div class="sbogia-eq-col"></div>
+                        <div class="sbogia-eq-col"></div>
+                        <div class="sbogia-eq-col"></div>
+                        <div class="sbogia-eq-col"></div>
+                        <div class="sbogia-eq-col"></div>
+                    </div>
+
+                    <div class="sbogia-eq-side sbogia-eq-side-right"></div>
+                </div>
+            </div>
+
+            <div class="sbogia-controls">
+                <button class="sbogia-btn sbogia-btn-small" id="prevBtn">◀ PREV</button>
+                <button class="sbogia-btn sbogia-btn-small" id="playBtn">▶ PLAY / PAUSE</button>
+                <button class="sbogia-btn sbogia-btn-small" id="nextBtn">NEXT ▶</button>
+                <button class="sbogia-btn sbogia-btn-small" id="shuffleBtn">SHUFFLE</button>
+                <button class="sbogia-btn sbogia-btn-small" id="repeatBtn">REPEAT</button>
+            </div>
+
+            <div class="sbogia-bottom">
+                <div class="sbogia-bottom-row">
+                    <div class="sbogia-volume-block">
+                        <span class="sbogia-volume-label">VOLUME</span>
+                        <div class="sbogia-volume-knob">
+                            <input type="range" min="0" max="100" value="70" id="sbogia-volume-range">
+                        </div>
+                    </div>
+
+                    <div class="sbogia-source-block">
+                        <span class="sbogia-source-label">SOURCE</span>
+                        <div class="sbogia-source-buttons">
+                            <button class="sbogia-btn sbogia-btn-tiny" id="sbogia-source-a">CH A</button>
+                            <button class="sbogia-btn sbogia-btn-tiny" id="sbogia-source-b">CH B</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sbogia-audio-wrap">
+                    <audio id="audioPlayer" controls></audio>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- DESTRA: LISTA E RICERCA -->
+    <!-- DESTRA: LISTA E RICERCA (come prima) -->
     <div class="content-side">
         <input type="text" id="searchInput" class="search-box" placeholder="🔍 Cerca brano o artista...">
         <div class="debug-link">
@@ -259,14 +505,19 @@
     const repeatBtn = document.getElementById('repeatBtn');
     const statusMsg = document.getElementById('statusMsg');
     const currentTitle = document.getElementById('currentTitle');
-    const currentArtist = document.getElementById('currentArtist');
-    const coverBox = document.getElementById('coverBox');
+    const currentArtist = document.createElement('span); // non serve più come elemento separato
+
+    const volumeRange = document.getElementById('sbogia-volume-range');
+    const sourceABtn = document.getElementById('sbogia-source-a');
+    const sourceBBtn = document.getElementById('sbogia-source-b');
+    const channelDisplay = document.getElementById('sbogia-channel');
 
     let songsData = [];
     let items = [];
     let currentIndex = 0;
     let isShuffle = false;
     let isRepeat = false;
+    let currentSource = 'A'; // per ora solo visuale
 
     function setError(message) {
         playlistUl.innerHTML = '';
@@ -280,7 +531,7 @@
     async function loadSongs() {
         try {
             const response = await fetch('/api/playlist');
-            
+
             if (!response.ok) {
                 throw new Error(`Errore HTTP ${response.status}`);
             }
@@ -294,143 +545,5 @@
 
             songsData.reverse();
             playlistUl.innerHTML = '';
-            
-            songsData.forEach((song, index) => {
-                const li = document.createElement('li');
-                li.setAttribute('data-src', song.url);
-                li.setAttribute('data-title', song.title);
-                li.setAttribute('data-artist', song.artist);
 
-                li.innerHTML = `
-                    <span class="song-title">${song.title}</span>
-                    <span class="song-artist">${song.artist}</span>
-                `;
-
-                li.addEventListener('click', () => playSong(index));
-                playlistUl.appendChild(li);
-            });
-
-            items = Array.from(playlistUl.querySelectorAll('li'));
-
-            if (items.length > 0) {
-                playSong(0, false);
-            }
-        } catch (error) {
-            console.error(error);
-            setError(`Errore di connessione: ${error.message}`);
-        }
-    }
-
-    function getVisibleItems() {
-        return items.filter(item => item.style.display !== 'none');
-    }
-
-    function updateMediaSession(title, artist) {
-        if ('mediaSession' in navigator) {
-            navigator.mediaSession.metadata = new MediaMetadata({
-                title: title || 'Brano Sconosciuto',
-                artist: artist || 'Artista Sconosciuto',
-                album: 'SboGiA Player'
-            });
-
-            navigator.mediaSession.setActionHandler('play', () => player.play());
-            navigator.mediaSession.setActionHandler('pause', () => player.pause());
-            navigator.mediaSession.setActionHandler('previoustrack', playPrev);
-            navigator.mediaSession.setActionHandler('nexttrack', playNext);
-        }
-    }
-
-    function playSong(index, autoPlay = true) {
-        if (index < 0 || index >= items.length) return;
-
-        items.forEach(li => li.classList.remove('active'));
-
-        const selected = items[index];
-        selected.classList.add('active');
-        selected.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-        const title = selected.getAttribute('data-title');
-        const artist = selected.getAttribute('data-artist');
-
-        currentTitle.textContent = title;
-        currentArtist.textContent = artist;
-
-        // segnaposto copertina: per ora solo icona
-        coverBox.textContent = '🎵';
-
-        player.src = selected.getAttribute('data-src');
-        currentIndex = index;
-
-        if (autoPlay) {
-            player.play().catch(() => {});
-        }
-
-        updateMediaSession(title, artist);
-    }
-
-    function playNext() {
-        if (isRepeat) {
-            playSong(currentIndex);
-            return;
-        }
-
-        const visible = getVisibleItems();
-        if (visible.length === 0) return;
-
-        if (isShuffle) {
-            const randomIndex = Math.floor(Math.random() * visible.length);
-            const targetItem = visible[randomIndex];
-            playSong(items.indexOf(targetItem));
-        } else {
-            const currentVisibleIndex = visible.indexOf(items[currentIndex]);
-            let nextVisibleIndex = currentVisibleIndex + 1;
-            if (nextVisibleIndex >= visible.length) nextVisibleIndex = 0;
-            playSong(items.indexOf(visible[nextVisibleIndex]));
-        }
-    }
-
-    function playPrev() {
-        const visible = getVisibleItems();
-        if (visible.length === 0) return;
-
-        const currentVisibleIndex = visible.indexOf(items[currentIndex]);
-        let prevVisibleIndex = currentVisibleIndex - 1;
-        if (prevVisibleIndex < 0) prevVisibleIndex = visible.length - 1;
-        playSong(items.indexOf(visible[prevVisibleIndex]));
-    }
-
-    nextBtn.addEventListener('click', playNext);
-    prevBtn.addEventListener('click', playPrev);
-
-    shuffleBtn.addEventListener('click', () => {
-        isShuffle = !isShuffle;
-        shuffleBtn.classList.toggle('active-mode', isShuffle);
-    });
-
-    repeatBtn.addEventListener('click', () => {
-        isRepeat = !isRepeat;
-        repeatBtn.classList.toggle('active-mode', isRepeat);
-    });
-
-    player.addEventListener('ended', playNext);
-
-    searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.trim().toLowerCase();
-
-        items.forEach(item => {
-            const title = (item.getAttribute('data-title') || '').toLowerCase();
-            const artist = (item.getAttribute('data-artist') || '').toLowerCase();
-
-            if (title.includes(query) || artist.includes(query)) {
-                item.style.display = '';
-            } else {
-                item.style.display = 'none';
-            }
-        });
-    });
-
-    loadSongs();
-</script>
-
-</body>
-</html>
+            songsData.for
