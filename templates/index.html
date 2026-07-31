@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sbogia Player 1972</title>
     <style>
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
         body {
             font-family: Arial, sans-serif;
             background-color: #000000;
@@ -32,12 +30,10 @@
             border: 1px solid #2a2a2a;
         }
         @media (max-width: 768px) {
-            .app-layout {
-                flex-direction: column;
-            }
+            .app-layout { flex-direction: column; }
         }
 
-        /* Sezione Sinistra: Sbogia Player 1972 */
+        /* SINISTRA: Sbogia Player 1972 */
         .player-side {
             flex: 1;
             display: flex;
@@ -73,14 +69,8 @@
             letter-spacing: 0.12em;
             text-transform: uppercase;
         }
-
-        .sbogia-brand {
-            font-weight: 600;
-        }
-
-        .sbogia-label {
-            opacity: 0.7;
-        }
+        .sbogia-brand { font-weight: 600; }
+        .sbogia-label { opacity: 0.7; }
 
         .sbogia-display {
             background: #050505;
@@ -88,7 +78,6 @@
             padding: 10px 14px;
             border: 1px solid #2a2a2a;
         }
-
         .sbogia-display-header {
             display: flex;
             justify-content: space-between;
@@ -96,12 +85,10 @@
             margin-bottom: 6px;
             font-size: 11px;
         }
-
         .sbogia-mode {
             color: #c5c5c5;
             font-weight: 500;
         }
-
         .sbogia-info {
             color: #e8f0c0;
             font-weight: 500;
@@ -112,10 +99,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-
-        .sbogia-channel {
-            color: #c5c5c5;
-        }
+        .sbogia-channel { color: #c5c5c5; }
 
         /* Equalizer stile Sony */
         .sbogia-eq {
@@ -124,7 +108,6 @@
             gap: 8px;
             margin-top: 4px;
         }
-
         .sbogia-eq-side {
             width: 8px;
             height: 42px;
@@ -133,7 +116,6 @@
             position: relative;
             box-shadow: 0 0 6px rgba(255, 60, 60, 0.5);
         }
-
         .sbogia-eq-side::before,
         .sbogia-eq-side::after {
             content: "";
@@ -144,20 +126,14 @@
             background: #ffffe0;
             transform: translateX(-50%);
         }
-
-        .sbogia-eq-side::before {
-            top: 6px;
-        }
-        .sbogia-eq-side::after {
-            bottom: 6px;
-        }
+        .sbogia-eq-side::before { top: 6px; }
+        .sbogia-eq-side::after { bottom: 6px; }
 
         .sbogia-eq-columns {
             flex: 1;
             display: flex;
             justify-content: space-between;
         }
-
         .sbogia-eq-col {
             width: 8%;
             height: 42px;
@@ -166,9 +142,8 @@
             justify-content: flex-start;
             gap: 1px;
             transform-origin: bottom;
-            animation: sbogiaEqPulse 1.8s infinite ease-in-out;
+            animation: sbogiaEqPulse 6s infinite ease-in-out;
         }
-
         .sbogia-eq-col::before {
             content: "";
             display: block;
@@ -185,15 +160,10 @@
             border-radius: 1px;
             opacity: 0.85;
         }
-
         @keyframes sbogiaEqPulse {
-            0%   { transform: scaleY(0.6); }
-            25%  { transform: scaleY(0.9); }
-            50%  { transform: scaleY(0.5); }
-            75%  { transform: scaleY(0.8); }
-            100% { transform: scaleY(0.7); }
+            0%, 100% { transform: scaleY(0.78); }
+            50%      { transform: scaleY(0.82); }
         }
-
         .sbogia-eq-col:nth-child(2)  { animation-delay: 0.2s; }
         .sbogia-eq-col:nth-child(3)  { animation-delay: 0.4s; }
         .sbogia-eq-col:nth-child(4)  { animation-delay: 0.6s; }
@@ -211,7 +181,6 @@
             margin-top: 10px;
             margin-bottom: 8px;
         }
-
         .sbogia-btn {
             background: #202020;
             border: 1px solid #404040;
@@ -223,50 +192,33 @@
             letter-spacing: 0.08em;
             text-transform: uppercase;
         }
-
-        .sbogia-btn-small {
-            padding: 5px 8px;
-        }
-
-        .sbogia-btn-tiny {
-            padding: 3px 6px;
-            font-size: 10px;
-        }
-
-        .sbogia-btn:hover {
-            background: #2a2a2a;
-        }
-
-        .sbogia-btn:active {
-            background: #101010;
-        }
-
+        .sbogia-btn-small { padding: 5px 8px; }
+        .sbogia-btn-tiny  { padding: 3px 6px; font-size: 10px; }
+        .sbogia-btn:hover { background: #2a2a2a; }
+        .sbogia-btn:active { background: #101010; }
         .sbogia-btn.active-mode {
             background-color: #2e8b57;
             box-shadow: 0 0 8px rgba(46, 139, 87, 0.6);
         }
 
-        /* Parte inferiore: volume + source + audio */
+        /* Parte inferiore */
         .sbogia-bottom {
             margin-top: 8px;
             display: flex;
             flex-direction: column;
             gap: 10px;
         }
-
         .sbogia-bottom-row {
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
         }
-
         .sbogia-volume-block,
         .sbogia-source-block {
             display: flex;
             flex-direction: column;
             gap: 4px;
         }
-
         .sbogia-volume-label,
         .sbogia-source-label {
             font-size: 10px;
@@ -274,7 +226,6 @@
             text-transform: uppercase;
             opacity: 0.8;
         }
-
         .sbogia-volume-knob {
             width: 120px;
             height: 32px;
@@ -285,19 +236,16 @@
             align-items: center;
             padding: 0 8px;
         }
-
         #sbogia-volume-range {
             width: 100%;
             -webkit-appearance: none;
             appearance: none;
             background: transparent;
         }
-
         #sbogia-volume-range::-webkit-slider-runnable-track {
             height: 3px;
             background: #c0c0c0;
         }
-
         #sbogia-volume-range::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -308,12 +256,10 @@
             border: 1px solid #888;
             margin-top: -4px;
         }
-
         #sbogia-volume-range::-moz-range-track {
             height: 3px;
             background: #c0c0c0;
         }
-
         #sbogia-volume-range::-moz-range-thumb {
             width: 10px;
             height: 10px;
@@ -321,19 +267,14 @@
             background: #f5f5f5;
             border: 1px solid #888;
         }
-
-        .sbogia-source-buttons {
-            display: flex;
-            gap: 4px;
-        }
-
+        .sbogia-source-buttons { display: flex; gap: 4px; }
         .sbogia-audio-wrap audio {
             width: 100%;
             border-radius: 30px;
             margin-top: 6px;
         }
 
-        /* Sezione Destra: Copertine / Lista (come prima) */
+        /* DESTRA: lista brani */
         .content-side {
             flex: 1.2;
             display: flex;
@@ -350,9 +291,7 @@
             font-size: 14px;
             outline: none;
         }
-        .search-box:focus {
-            border-color: #2e8b57;
-        }
+        .search-box:focus { border-color: #2e8b57; }
         .debug-link {
             font-size: 12px;
             color: #888;
@@ -362,9 +301,7 @@
             color: #2e8b57;
             text-decoration: none;
         }
-        .debug-link a:hover {
-            text-decoration: underline;
-        }
+        .debug-link a:hover { text-decoration: underline; }
         .playlist {
             list-style: none;
             padding: 0;
@@ -383,28 +320,19 @@
             display: flex;
             flex-direction: column;
         }
-        .playlist li:last-child {
-            border-bottom: none;
-        }
-        .playlist li:hover {
-            background-color: #2a2a2a;
-        }
+        .playlist li:last-child { border-bottom: none; }
+        .playlist li:hover { background-color: #2a2a2a; }
         .playlist li.active {
             background-color: #004225;
             color: #fff;
         }
-        .song-title {
-            font-weight: bold;
-            display: block;
-        }
+        .song-title { font-weight: bold; display: block; }
         .song-artist {
             font-size: 0.85em;
             color: #aaa;
             margin-top: 3px;
         }
-        .playlist li.active .song-artist {
-            color: #ddd;
-        }
+        .playlist li.active .song-artist { color: #ddd; }
         .status-msg {
             padding: 20px;
             text-align: center;
@@ -433,7 +361,6 @@
 
                 <div class="sbogia-eq">
                     <div class="sbogia-eq-side sbogia-eq-side-left"></div>
-
                     <div class="sbogia-eq-columns">
                         <div class="sbogia-eq-col"></div>
                         <div class="sbogia-eq-col"></div>
@@ -444,7 +371,6 @@
                         <div class="sbogia-eq-col"></div>
                         <div class="sbogia-eq-col"></div>
                     </div>
-
                     <div class="sbogia-eq-side sbogia-eq-side-right"></div>
                 </div>
             </div>
@@ -465,7 +391,6 @@
                             <input type="range" min="0" max="100" value="70" id="sbogia-volume-range">
                         </div>
                     </div>
-
                     <div class="sbogia-source-block">
                         <span class="sbogia-source-label">SOURCE</span>
                         <div class="sbogia-source-buttons">
@@ -482,13 +407,12 @@
         </div>
     </div>
 
-    <!-- DESTRA: LISTA E RICERCA (come prima) -->
+    <!-- DESTRA: lista e ricerca -->
     <div class="content-side">
         <input type="text" id="searchInput" class="search-box" placeholder="🔍 Cerca brano o artista...">
         <div class="debug-link">
             Stato servizio: <a href="/api/debug" target="_blank">/api/debug</a>
         </div>
-
         <ul class="playlist" id="playlist">
             <div id="statusMsg" class="status-msg">Caricamento brani dai canali...</div>
         </ul>
@@ -496,28 +420,28 @@
 </div>
 
 <script>
-    const player = document.getElementById('audioPlayer');
-    const playlistUl = document.getElementById('playlist');
-    const searchInput = document.getElementById('searchInput');
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
-    const shuffleBtn = document.getElementById('shuffleBtn');
-    const repeatBtn = document.getElementById('repeatBtn');
-    const statusMsg = document.getElementById('statusMsg');
+    const player       = document.getElementById('audioPlayer');
+    const playlistUl   = document.getElementById('playlist');
+    const searchInput  = document.getElementById('searchInput');
+    const prevBtn      = document.getElementById('prevBtn');
+    const nextBtn      = document.getElementById('nextBtn');
+    const shuffleBtn   = document.getElementById('shuffleBtn');
+    const repeatBtn    = document.getElementById('repeatBtn');
+    const statusMsg    = document.getElementById('statusMsg');
     const currentTitle = document.getElementById('currentTitle');
-    const currentArtist = document.createElement('span); // non serve più come elemento separato
 
-    const volumeRange = document.getElementById('sbogia-volume-range');
-    const sourceABtn = document.getElementById('sbogia-source-a');
-    const sourceBBtn = document.getElementById('sbogia-source-b');
+    const volumeRange    = document.getElementById('sbogia-volume-range');
+    const sourceABtn     = document.getElementById('sbogia-source-a');
+    const sourceBBtn     = document.getElementById('sbogia-source-b');
     const channelDisplay = document.getElementById('sbogia-channel');
+    const playBtn        = document.getElementById('playBtn');
 
-    let songsData = [];
-    let items = [];
+    let songsData   = [];
+    let items       = [];
     let currentIndex = 0;
-    let isShuffle = false;
-    let isRepeat = false;
-    let currentSource = 'A'; // per ora solo visuale
+    let isShuffle    = false;
+    let isRepeat     = false;
+    let currentSource = 'A'; // solo visuale per ora
 
     function setError(message) {
         playlistUl.innerHTML = '';
@@ -531,13 +455,11 @@
     async function loadSongs() {
         try {
             const response = await fetch('/api/playlist');
-
             if (!response.ok) {
                 throw new Error(`Errore HTTP ${response.status}`);
             }
 
             songsData = await response.json();
-
             if (!songsData || songsData.length === 0) {
                 setError('Lista brani vuota. Controlla i canali Telegram o /api/debug.');
                 return;
@@ -546,4 +468,15 @@
             songsData.reverse();
             playlistUl.innerHTML = '';
 
-            songsData.for
+            songsData.forEach((song, index) => {
+                const li = document.createElement('li');
+                li.setAttribute('data-src', song.url);
+                li.setAttribute('data-title', song.title);
+                li.setAttribute('data-artist', song.artist);
+
+                li.innerHTML = `
+                    <span class="song-title">${song.title}</span>
+                    <span class="song-artist">${song.artist}</span>
+                `;
+
+               
